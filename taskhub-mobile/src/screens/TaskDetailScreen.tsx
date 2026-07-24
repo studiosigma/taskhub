@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -37,46 +37,48 @@ export const TaskDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   const toast = useToast();
   const { user } = useAuth();
   const { taskId } = route.params || {};
+
+  // Early validation - check if taskId is provided
+  if (!taskId) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.surface, justifyContent: 'center', alignItems: 'center', paddingTop: insets.top }}>
+        <ErrorState
+          icon="📭"
+          title="Task tidak valid"
+          message="ID Task tidak ditemukan. Silakan kembali dan pilih task lain."
+          onRetry={() => navigation.goBack()}
+        />
+      </View>
+    );
+  }
+
   const [task, setTask] = useState<Task | null>(null);
   const [myApplication, setMyApplication] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [applying, setApplying] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
 
-  const getRelativeTime = (dateStr?: string) => {
-    if (!dateStr) return 'Diposting baru saja';
-    const created = new Date(dateStr).getTime();
-    const now = new Date().getTime();
-    const diffMin = Math.floor((now - created) / (1000 * 60));
-    if (isNaN(diffMin) || diffMin < 1) return 'Diposting baru saja';
-    if (diffMin < 60) return `Diposting ${diffMin} menit lalu`;
-    const diffHours = Math.floor(diffMin / 60);
-    if (diffHours < 24) return `Diposting ${diffHours} jam lalu`;
-    const diffDays = Math.floor(diffHours / 24);
-    return `Diposting ${diffDays} hari lalu`;
-  };
-
-  const handleRatingSubmit = async (rating: number, comment: string) => {
-    if (!taskId) return;
-    try {
-      await reviewsApi.create(taskId, rating, comment);
-      toast.show({ type: 'success', title: 'Terima Kasih', message: 'Ulasan Anda telah dikirim' });
-    } catch { /* ignore */ }
-  };
-
-  const fetchTask = () => {
+  const fetchTask = useCallback(async () => {
     if (!taskId) return;
     setLoading(true);
     setError(false);
-    tasksApi
-      .getById(taskId)
-      .then((data: any) => { setTask(data); })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  };
+    setErrorMessage('');
+    try {
+      const data = await tasksApi.getById(taskId);
+      setTask(data);
+    } catch (e: any) {
+      setError(true);
+      setErrorMessage(e.response?.data?.message || 'Gagal memuat detail task');
+    } finally {
+      setLoading(false);
+    }
+  }, [taskId]);
 
-  useEffect(() => { fetchTask(); }, [taskId]);
+  useEffect(() => {
+    fetchTask();
+  }, [fetchTask]);
 
   useEffect(() => {
     // Check if current user already applied to this task
@@ -112,12 +114,33 @@ export const TaskDetailScreen: React.FC<{ route: any; navigation: any }> = ({
     } catch {}
   };
 
+  const getRelativeTime = (dateStr?: string) => {
+    if (!dateStr) return 'Diposting baru saja';
+    const created = new Date(dateStr).getTime();
+    const now = new Date().getTime();
+    const diffMin = Math.floor((now - created) / (1000 * 60));
+    if (isNaN(diffMin) || diffMin < 1) return 'Diposting baru saja';
+    if (diffMin < 60) return `Diposting ${diffMin} menit lalu`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `Diposting ${diffHours} jam lalu`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `Diposting ${diffDays} hari lalu`;
+  };
+
+  const handleRatingSubmit = async (rating: number, comment: string) => {
+    if (!taskId) return;
+    try {
+      await reviewsApi.create(taskId, rating, comment);
+      toast.show({ type: 'success', title: 'Terima Kasih', message: 'Ulasan Anda telah dikirim' });
+    } catch { /* ignore */ }
+  };
+
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <View style={{ flex: 1, backgroundColor: COLORS.surface }}>
         <View style={[styles.navBarHeader, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity style={styles.navBtn} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={24} color="#0B0B0B" />
+            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.navTitle}>Detail Task</Text>
           <View style={{ width: 36 }} />
@@ -129,10 +152,10 @@ export const TaskDetailScreen: React.FC<{ route: any; navigation: any }> = ({
 
   if (error || !task) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <View style={{ flex: 1, backgroundColor: COLORS.surface }}>
         <View style={[styles.navBarHeader, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity style={styles.navBtn} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={24} color="#0B0B0B" />
+            <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.navTitle}>Detail Task</Text>
           <View style={{ width: 36 }} />
@@ -140,7 +163,7 @@ export const TaskDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         <ErrorState
           icon="😕"
           title="Task tidak ditemukan"
-          message="Task mungkin telah dihapus atau terjadi kesalahan jaringan"
+          message={errorMessage || 'Task mungkin telah dihapus atau terjadi kesalahan jaringan'}
           onRetry={fetchTask}
         />
       </View>
