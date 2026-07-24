@@ -1,0 +1,267 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum TaskStatus {
+  DRAFT
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                      String                    @id @default(uuid())
+  fullName                String                    @map("full_name")
+  email                   String                    @unique
+  phone                   String?                   @unique
+  password                String
+  avatar                  String?
+  bio                     String?
+  rating                  Float                     @default(0)
+  completedTask           Int                       @default(0) @map("completed_task")
+  isVerified              Boolean                   @default(false) @map("is_verified")
+  role                    UserRole                  @default(USER)
+  fcmToken                String?                   @map("fcm_token")
+  refreshToken            String?                   @map("refresh_token") // Store hashed refresh tokens
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  updatedAt               DateTime                  @updatedAt @map("updated_at")
+
+  tasks                   Task[]                    @relation("UserOwnedTasks")
+  applications            Application[]
+  assignments             Assignment[]
+  sentMessages            Message[]                 @relation("UserSentMessages")
+  reviewsGiven            Review[]                  @relation("Reviewer")
+  reviewsReceived         Review[]                  @relation("ReviewedUser")
+  notifications           Notification[]
+  reportsFiled            Report[]                  @relation("Reporter")
+  reportsReceived         Report[]                  @relation("ReportedUser")
+  donations               SupportDonation[]
+  verifications           Verification[]
+  conversationParticipants ConversationParticipant[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  icon        String?
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tasks Task[]
+
+  @@map("categories")
+}
+
+model Task {
+  id           String        @id @default(uuid())
+  ownerId      String        @map("owner_id")
+  categoryId   String        @map("category_id")
+  title        String
+  description  String
+  budget       Decimal
+  duration     String // e.g., "3 hours", "1 day"
+  helperNeeded Int           @default(1) @map("helper_needed")
+  latitude     Float?
+  longitude    Float?
+  address      String?
+  status       TaskStatus    @default(DRAFT)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  owner        User          @relation("UserOwnedTasks", fields: [ownerId], references: [id])
+  category     Category      @relation(fields: [categoryId], references: [id])
+  photos       TaskPhoto[]
+  applications Application[]
+  assignments  Assignment[]
+  reviews      Review[]
+  conversations Conversation[]
+
+  @@index([ownerId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([latitude, longitude])
+  @@map("tasks")
+}
+
+model TaskPhoto {
+  id        String   @id @default(uuid())
+  taskId    String   @map("task_id")
+  imageUrl  String   @map("image_url")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("task_photos")
+}
+
+model Application {
+  id        String            @id @default(uuid())
+  taskId    String            @map("task_id")
+  userId    String            @map("user_id")
+  message   String?
+  status    ApplicationStatus @default(PENDING)
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  task Task @relation(fields: [taskId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([taskId, userId])
+  @@map("applications")
+}
+
+model Assignment {
+  id        String   @id @default(uuid())
+  taskId    String   @map("task_id")
+  userId    String   @map("user_id") // The helper assigned
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  task Task @relation(fields: [taskId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([taskId])
+  @@index([userId])
+  @@map("assignments")
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+  taskId    String?  @map("task_id") // Optional, some conversations might not be tied to a task
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  task        Task?                    @relation(fields: [taskId], references: [id])
+  participants ConversationParticipant[]
+  messages    Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String       @map("conversation_id")
+  userId         String       @map("user_id")
+  joinedAt       DateTime     @default(now()) @map("joined_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String       @map("conversation_id")
+  senderId       String       @map("sender_id")
+  content        String
+  isRead         Boolean      @default(false) @map("is_read")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("UserSentMessages", fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@map("messages")
+}
+
+model Review {
+  id             String   @id @default(uuid())
+  taskId         String   @map("task_id")
+  reviewerId     String   @map("reviewer_id")
+  reviewedUserId String   @map("reviewed_user_id")
+  rating         Int // 1-5
+  comment        String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  task        Task @relation(fields: [taskId], references: [id])
+  reviewer    User @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewedUser User @relation("ReviewedUser", fields: [reviewedUserId], references: [id])
+
+  @@unique([taskId, reviewerId]) // A user can only review a task once
+  @@map("reviews")
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  title       String
+  description String
+  isRead      Boolean  @default(false) @map("is_read")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+model Report {
+  id             String   @id @default(uuid())
+  reporterId     String   @map("reporter_id")
+  reportedUserId String   @map("reported_user_id")
+  reason         String
+  description    String?
+  status         String   @default("pending") // e.g., pending, reviewed, resolved
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  reporter    User @relation("Reporter", fields: [reporterId], references: [id])
+  reportedUser User @relation("ReportedUser", fields: [reportedUserId], references: [id])
+
+  @@map("reports")
+}
+
+model SupportDonation {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  amount       Decimal
+  paymentMethod String    @map("payment_method")
+  message      String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("support_donations")
+}
+
+model Verification {
+  id             String             @id @default(uuid())
+  userId         String             @unique @map("user_id")
+  documentUrl    String             @map("document_url")
+  status         VerificationStatus @default(PENDING)
+  rejectedReason String?            @map("rejected_reason")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("verifications")
+}
