@@ -2,7 +2,7 @@ import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { CompositeScreenProps } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { MainTabParamList, RootStackParamList } from "../types";
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,11 +15,14 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { chatsApi } from '../services';
-import { Conversation } from '../types';
-import { COLORS, FONT_SIZES, SPACING } from '../constants';
+import { Conversation, Message, User } from '../types';
+import { COLORS, FONT_SIZES, SPACING, SHADOWS, BORDER_RADIUS } from '../constants';
 import { useThemeColor } from '../hooks/useThemeColor';
 import { EmptyState } from '../components/ui/EmptyState';
+import { useAuth } from '../hooks/useAuth';
+import { useDebounce } from '../hooks/useDebounce';
 
 type ChatListProps = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'Inbox'>,
@@ -28,8 +31,11 @@ type ChatListProps = CompositeScreenProps<
 
 export const ChatListScreen: React.FC<ChatListProps> = ({ navigation }) => {
   const theme = useThemeColor();
+  const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [conversations, setConversations] = useState<any[]>([]);
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -61,34 +67,61 @@ export const ChatListScreen: React.FC<ChatListProps> = ({ navigation }) => {
     return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
   };
 
-  const getOtherUser = (conv: any) => {
-    // The current user's ID isn't directly available here, but participants
-    // includes other users in the conversation
-    return conv.participants?.[0]?.user || {};
+  const getOtherUser = (conv: Conversation): User | null => {
+    if (!conv.participants || !user) return null;
+    // Find the participant that is NOT the current user
+    const otherParticipant = conv.participants.find(p => p.userId !== user.id);
+    return otherParticipant?.user || conv.participants[0]?.user || null;
+  };
+
+  const filteredConversations = useMemo(() => {
+    let result = conversations;
+    if (debouncedSearch) {
+      const query = debouncedSearch.toLowerCase();
+      result = result.filter(conv => {
+        const otherUser = getOtherUser(conv);
+        return otherUser?.fullName?.toLowerCase().includes(query) ||
+               conv.lastMessage?.content?.toLowerCase().includes(query) ||
+               conv.task?.title?.toLowerCase().includes(query);
+      });
+    }
+    return result;
+  }, [conversations, debouncedSearch, user]);
+
+  const getLastMessage = (conv: Conversation): Message | null => {
+    if (conv.lastMessage) return conv.lastMessage;
+    if (conv.messages && conv.messages.length > 0) {
+      return [...conv.messages].sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )[0];
+    }
+    return null;
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Header */}
       <View style={styles.headerBar}>
         <Text style={styles.headerTitle}>Inbox</Text>
         <TouchableOpacity style={{ padding: 4 }}>
-          <Ionicons name="notifications-outline" size={22} color="#0B0B0B" />
+          <Ionicons name="notifications-outline" size={22} color={COLORS.textPrimary} />
         </TouchableOpacity>
       </View>
 
+      {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={18} color="#71717A" style={{ marginRight: 8 }} />
+        <Ionicons name="search" size={18} color={COLORS.textSecondary} style={{ marginRight: 8 }} />
         <TextInput
           style={styles.searchInput}
           placeholder="Cari chat"
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={COLORS.slate400}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
       </View>
 
       <FlatList
-        data={conversations}
+        data={filteredConversations}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
@@ -96,40 +129,46 @@ export const ChatListScreen: React.FC<ChatListProps> = ({ navigation }) => {
         }
         ListEmptyComponent={
           !loading ? (
-            <EmptyState icon="💬" title="Belum ada chat" message="Mulai dengan mengambil task atau membuat task baru!" />
+            <EmptyState icon="chatbubbles-outline" title="Belum ada chat" message="Mulai dengan mengambil task atau membuat task baru!" />
           ) : null
         }
-        renderItem={({ item }: { item: any }) => {
+        renderItem={({ item }: { item: Conversation }) => {
           const otherUser = getOtherUser(item);
-          const lastMsg = item.messages?.[0] || item.lastMessage;
+          const lastMsg = getLastMessage(item);
+          const unreadCount = item.unreadCount || 0;
           return (
             <TouchableOpacity
               style={styles.chatRowItem}
               onPress={() =>
                 navigation.navigate('ChatDetail', {
                   conversationId: item.id,
-                  otherUser: { id: otherUser.id, fullName: otherUser.fullName, avatar: otherUser.avatar },
+                  otherUser: { id: otherUser?.id, fullName: otherUser?.fullName, avatar: otherUser?.avatar },
                 })
               }
               activeOpacity={0.7}
             >
-              {otherUser.avatar ? (
+              {otherUser?.avatar ? (
                 <Image source={{ uri: otherUser.avatar }} style={styles.avatarImage} />
               ) : (
-                <View style={[styles.avatarImage, { backgroundColor: COLORS.warmYellow, justifyContent: 'center', alignItems: 'center' }]}>
+                <View style={[styles.avatarImage, { backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' }]}>
                   <Text style={{ fontSize: 18, fontWeight: '900', color: COLORS.textPrimary }}>
-                    {otherUser.fullName?.charAt(0)?.toUpperCase() || '?'}
+                    {otherUser?.fullName?.charAt(0)?.toUpperCase() || '?'}
                   </Text>
                 </View>
               )}
               <View style={styles.middleContent}>
-                <Text style={styles.nameText}>{otherUser.fullName || 'Unknown'}</Text>
+                <Text style={styles.nameText}>{otherUser?.fullName || 'Unknown'}</Text>
                 <Text style={styles.lastMsgText} numberOfLines={1}>
                   {lastMsg?.content || 'Belum ada pesan'}
                 </Text>
               </View>
               <View style={styles.rightMeta}>
                 <Text style={styles.timeText}>{getTimeLabel(lastMsg?.createdAt)}</Text>
+                {unreadCount > 0 && (
+                  <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                  </View>
+                )}
               </View>
             </TouchableOpacity>
           );
@@ -146,10 +185,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
-    paddingTop: 54,
+    paddingTop: 8,
     paddingBottom: SPACING.xs,
+    ...SHADOWS.sm,
+    backgroundColor: COLORS.surface,
   },
-  headerTitle: { fontSize: FONT_SIZES['2xl'], fontWeight: '900', color: COLORS.slate900 },
+  headerTitle: { fontSize: FONT_SIZES['2xl'], fontWeight: '900', color: COLORS.textPrimary },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -163,7 +204,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.slate200,
   },
-  searchInput: { flex: 1, fontSize: FONT_SIZES.sm, color: COLORS.slate900 },
+  searchInput: { flex: 1, fontSize: FONT_SIZES.sm, color: COLORS.textPrimary },
   listContent: { paddingHorizontal: SPACING.lg, paddingBottom: 100 },
   chatRowItem: {
     flexDirection: 'row',
@@ -174,8 +215,18 @@ const styles = StyleSheet.create({
   },
   avatarImage: { width: 52, height: 52, borderRadius: 26, marginRight: SPACING.md },
   middleContent: { flex: 1, marginRight: SPACING.sm },
-  nameText: { fontSize: FONT_SIZES.base, fontWeight: '800', color: COLORS.slate900, marginBottom: 3 },
+  nameText: { fontSize: FONT_SIZES.base, fontWeight: '800', color: COLORS.textPrimary, marginBottom: 3 },
   lastMsgText: { fontSize: FONT_SIZES.sm, color: COLORS.slate500 },
   rightMeta: { alignItems: 'flex-end' },
   timeText: { fontSize: 11, color: COLORS.slate400, fontWeight: '500', marginBottom: 4 },
+  unreadBadge: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  unreadBadgeText: { color: COLORS.textPrimary, fontSize: 11, fontWeight: '900' },
 });

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ViewStyle } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { COLORS, FONT_SIZES, SPACING } from '../constants';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../constants';
 import { useAuth } from '../hooks/useAuth';
 import { useThemeColor } from '../hooks/useThemeColor';
 import { useToast } from '../components/ui/Toast';
@@ -40,15 +41,16 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={styles.accentBar} />
       <View style={styles.content}>
-        <Text style={styles.logo}>🚹</Text>
+        <Ionicons name="briefcase" size={64} color={COLORS.primary} style={{ marginBottom: SPACING.sm }} />
         <Text style={styles.title}>TaskHub</Text>
         <Text style={styles.subtitle}>Masuk untuk melanjutkan</Text>
 
         <TextInput
           style={styles.input}
           placeholder="Email"
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={COLORS.slate400}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -57,7 +59,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
         <TextInput
           style={styles.input}
           placeholder="Password"
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={COLORS.slate400}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -82,21 +84,22 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: SPACING['2xl'] },
-  logo: { fontSize: 64, textAlign: 'center', marginBottom: SPACING.sm },
-  title: { fontSize: FONT_SIZES['2xl'], fontWeight: '900', textAlign: 'center', color: '#0B0B0B' },
-  subtitle: { fontSize: FONT_SIZES.sm, textAlign: 'center', color: '#71717A', marginBottom: SPACING['2xl'] },
+  container: { flex: 1, backgroundColor: COLORS.surface },
+  accentBar: { height: 4, backgroundColor: COLORS.primary },
+  content: { flex: 1, justifyContent: 'center', paddingHorizontal: SPACING['2xl'], alignItems: 'center' },
+  title: { fontSize: FONT_SIZES['2xl'], fontWeight: '900', textAlign: 'center', color: COLORS.textPrimary },
+  subtitle: { fontSize: FONT_SIZES.sm, textAlign: 'center', color: COLORS.textSecondary, marginBottom: SPACING['2xl'] },
   input: {
-    backgroundColor: '#F8F8FA',
+    width: '100%',
+    backgroundColor: COLORS.bg,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
-    borderRadius: 14,
+    borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
     fontSize: FONT_SIZES.base,
     marginBottom: SPACING.md,
-    color: '#0B0B0B',
+    color: COLORS.textPrimary,
   },
-  button: { marginTop: SPACING.md, borderRadius: 16, height: 50 },
-  link: { textAlign: 'center', color: '#71717A', marginTop: SPACING.lg, fontSize: FONT_SIZES.sm },
+  button: { width: '100%', marginTop: SPACING.md, borderRadius: BORDER_RADIUS.lg, height: 50 },
+  link: { textAlign: 'center', color: COLORS.textSecondary, marginTop: SPACING.lg, fontSize: FONT_SIZES.sm },
 });

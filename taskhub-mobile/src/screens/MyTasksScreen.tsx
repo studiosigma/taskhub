@@ -1,25 +1,25 @@
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { RootStackParamList } from "../types";
 import React, { useState, useCallback } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types";
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONT_SIZES, SPACING } from '../constants';
+import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, SHADOWS } from '../constants';
 import { TaskCard } from '../components/ui/TaskCard';
 import { Badge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
+import { ScalePress } from '../components/ui/ScalePress';
 import { tasksApi } from '../services';
-import { useThemeColor } from '../hooks/useThemeColor';
 import { ScreenLayout } from '../components/layout/ScreenLayout';
 
 type TabKey = 'owned' | 'applications' | 'completed';
 
 export const MyTasksScreen: React.FC<NativeStackScreenProps<RootStackParamList, "MyTasks">> = ({ navigation }) => {
-  const theme = useThemeColor();
   const [activeTab, setActiveTab] = useState<TabKey>('owned');
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -32,37 +32,79 @@ export const MyTasksScreen: React.FC<NativeStackScreenProps<RootStackParamList, 
         list = list.filter((t: any) => t.status === 'COMPLETED');
       }
       setTasks(Array.isArray(list) ? list : []);
-    } catch (e) { console.log(e); }
-    finally { setLoading(false); setRefreshing(false); }
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [activeTab]);
 
   useFocusEffect(useCallback(() => { fetchTasks(); }, [fetchTasks]));
 
-  const tabs: { key: TabKey; label: string }[] = [
-    { key: 'owned', label: 'Task Saya' },
-    { key: 'applications', label: 'Lamaran' },
-    { key: 'completed', label: 'Selesai' },
+  const tabs: { key: TabKey; label: string; icon: string }[] = [
+    { key: 'owned', label: 'Tugas Saya', icon: 'clipboard' },
+    { key: 'applications', label: 'Lamaran Saya', icon: 'paper-plane' },
+    { key: 'completed', label: 'Selesai', icon: 'checkmark-circle' },
   ];
 
+  const filteredTasks = tasks.filter((task) => {
+    if (statusFilter === 'ALL') return true;
+    return task.status === statusFilter;
+  });
+
   const emptyStates: Record<TabKey, { icon: string; title: string; message: string }> = {
-    owned: { icon: '📋', title: 'Belum ada task', message: 'Cari task terdekat di halaman Beranda' },
-    applications: { icon: '📝', title: 'Belum ada lamaran', message: 'Lamar task yang menarik di halaman Beranda' },
-    completed: { icon: '✅', title: 'Belum ada task selesai', message: 'Task yang diselesaikan akan muncul di sini' },
+    owned: { icon: 'clipboard-outline', title: 'Belum ada tugas yang dibuat', message: 'Tekan tombol + di bawah untuk membuat tugas pertama Anda' },
+    applications: { icon: 'document-text-outline', title: 'Belum ada lamaran', message: 'Eksplorasi tugas terdekat dan lamar pengerjaannya' },
+    completed: { icon: 'checkmark-circle-outline', title: 'Belum ada tugas selesai', message: 'Tugas yang diselesaikan akan muncul di sini' },
   };
 
   return (
-    <ScreenLayout title="Task Saya" onBack={() => navigation.goBack()}>
-      {/* Tab Bar */}
-      <View style={styles.tabRow}>
+    <ScreenLayout title="Manajemen Tugas" onBack={() => navigation.goBack()}>
+      {/* Animated Segmented Tab Switcher */}
+      <View style={styles.tabContainer}>
         {tabs.map((tab) => {
           const active = activeTab === tab.key;
           return (
-            <TouchableOpacity
+            <ScalePress
               key={tab.key}
-              style={[styles.tab, active && { borderBottomColor: theme.primary, borderBottomWidth: 2 }]}
-              onPress={() => setActiveTab(tab.key)}
+              style={[styles.tabButton, active && styles.activeTabButton]}
+              onPress={() => {
+                setActiveTab(tab.key);
+                setStatusFilter('ALL');
+              }}
             >
-              <Text style={[styles.tabText, active && { color: '#0B0B0B', fontWeight: '900' }]}>{tab.label}</Text>
+              <Ionicons
+                name={(active ? tab.icon : `${tab.icon}-outline`) as any}
+                size={16}
+                color={active ? COLORS.textPrimary : COLORS.textSecondary}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={[styles.tabText, active && styles.activeTabText]}>{tab.label}</Text>
+            </ScalePress>
+          );
+        })}
+      </View>
+
+      {/* Filter Status Pills */}
+      <View style={styles.filterPillRow}>
+        {['ALL', 'OPEN', 'IN_PROGRESS', 'COMPLETED'].map((st) => {
+          const active = statusFilter === st;
+          const labelMap: Record<string, string> = {
+            ALL: 'Semua Status',
+            OPEN: 'Terbuka',
+            IN_PROGRESS: 'Sedang Jalan',
+            COMPLETED: 'Selesai',
+          };
+          return (
+            <TouchableOpacity
+              key={st}
+              style={[styles.filterPill, active && styles.activeFilterPill]}
+              onPress={() => setStatusFilter(st)}
+            >
+              <Text style={[styles.filterPillText, active && styles.activeFilterPillText]}>
+                {labelMap[st]}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -70,17 +112,20 @@ export const MyTasksScreen: React.FC<NativeStackScreenProps<RootStackParamList, 
 
       {/* Task List */}
       <FlatList
-        data={tasks}
+        data={filteredTasks}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View>
+          <View style={styles.cardContainer}>
             <TaskCard task={item} onPress={(t) => navigation.navigate('TaskDetail', { taskId: t.id })} />
-            <View style={{ paddingLeft: 4, marginTop: -6, marginBottom: 6 }}>
+            <View style={styles.badgeFooter}>
               <Badge status={item.status} size="sm" />
+              <Text style={styles.createdDateText}>
+                {new Date(item.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+              </Text>
             </View>
           </View>
         )}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={styles.listContent}
         refreshing={refreshing}
         onRefresh={() => { setRefreshing(true); fetchTasks(); }}
         ListEmptyComponent={<EmptyState {...emptyStates[activeTab]} />}
@@ -91,8 +136,83 @@ export const MyTasksScreen: React.FC<NativeStackScreenProps<RootStackParamList, 
 };
 
 const styles = StyleSheet.create({
-  tabRow: { flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 14, marginBottom: SPACING.md, padding: 4 },
-  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 12 },
-  tabText: { fontSize: 13, color: '#71717A', fontWeight: '600' },
-  list: { paddingBottom: 80 },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.slate100,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: 4,
+    marginBottom: SPACING.md,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: BORDER_RADIUS.lg,
+  },
+  activeTabButton: {
+    backgroundColor: COLORS.primary,
+    ...SHADOWS.sm,
+  },
+  tabText: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    fontWeight: '700',
+  },
+  activeTabText: {
+    color: COLORS.textPrimary,
+    fontWeight: '900',
+  },
+  filterPillRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: SPACING.md,
+    paddingHorizontal: 2,
+  },
+  filterPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: BORDER_RADIUS.full,
+    backgroundColor: COLORS.bg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  activeFilterPill: {
+    backgroundColor: COLORS.secondary,
+    borderColor: COLORS.secondary,
+  },
+  filterPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  activeFilterPillText: {
+    color: COLORS.white,
+  },
+  cardContainer: {
+    marginBottom: SPACING.md,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.xs,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.sm,
+  },
+  badgeFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.sm,
+    marginTop: -4,
+  },
+  createdDateText: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+  },
+  listContent: {
+    paddingBottom: 90,
+  },
 });

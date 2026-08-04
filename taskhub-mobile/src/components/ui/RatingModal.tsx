@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Alert,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONT_SIZES, SPACING } from '../../constants';
+import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../../constants';
 import { Button } from './Button';
 
 interface RatingModalProps {
@@ -26,15 +26,32 @@ export const RatingModal: React.FC<RatingModalProps> = ({
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const starAnim = useRef(new Animated.Value(1)).current;
+
+  const handleStarPress = (star: number) => {
+    setRating(star);
+    // Bounce animation
+    Animated.sequence([
+      Animated.timing(starAnim, {
+        toValue: 1.3,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(starAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        damping: 10,
+        stiffness: 200,
+      }),
+    ]).start();
+  };
 
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
       await onSubmit(rating, comment);
-      Alert.alert('Terima Kasih', 'Ulasan dan rating Anda telah berhasil dikirimkan!');
       onClose();
     } catch (e) {
-      Alert.alert('Info', 'Ulasan berhasil dikirimkan!');
       onClose();
     } finally {
       setSubmitting(false);
@@ -46,7 +63,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
       <View style={styles.overlay}>
         <View style={styles.modalContent}>
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-            <Ionicons name="close" size={20} color="#0B0B0B" />
+            <Ionicons name="close" size={20} color={COLORS.textPrimary} />
           </TouchableOpacity>
 
           <Text style={styles.modalTitle}>Beri Ulasan Task</Text>
@@ -57,13 +74,15 @@ export const RatingModal: React.FC<RatingModalProps> = ({
           {/* 5 Interactive Stars */}
           <View style={styles.starsRow}>
             {[1, 2, 3, 4, 5].map((star) => (
-              <TouchableOpacity key={star} onPress={() => setRating(star)} activeOpacity={0.7}>
-                <Ionicons
-                  name={star <= rating ? 'star' : 'star-outline'}
-                  size={36}
-                  color={star <= rating ? '#FFCA27' : '#D4D4D8'}
-                  style={{ marginHorizontal: 4 }}
-                />
+              <TouchableOpacity key={star} onPress={() => handleStarPress(star)} activeOpacity={0.7}>
+                <Animated.View style={star === rating ? { transform: [{ scale: starAnim }] } : undefined}>
+                  <Ionicons
+                    name={star <= rating ? 'star' : 'star-outline'}
+                    size={36}
+                    color={star <= rating ? COLORS.primary : COLORS.slate400}
+                    style={{ marginHorizontal: 4 }}
+                  />
+                </Animated.View>
               </TouchableOpacity>
             ))}
           </View>
@@ -71,12 +90,12 @@ export const RatingModal: React.FC<RatingModalProps> = ({
           {/* Rating Label */}
           <Text style={styles.ratingTextLabel}>
             {rating === 5
-              ? 'Sangat Memuaskan ⭐⭐⭐⭐⭐'
+              ? 'Sangat Memuaskan'
               : rating === 4
-              ? 'Bagus ⭐⭐⭐⭐'
+              ? 'Bagus'
               : rating === 3
-              ? 'Cukup ⭐⭐⭐'
-              : 'Kurang ⭐⭐'}
+              ? 'Cukup'
+              : 'Kurang'}
           </Text>
 
           {/* Comment Input */}
@@ -112,29 +131,29 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS['2xl'],
     padding: SPACING.xl,
     alignItems: 'center',
     position: 'relative',
   },
   closeBtn: { position: 'absolute', top: 16, right: 16, padding: 4 },
-  modalTitle: { fontSize: FONT_SIZES.xl, fontWeight: '900', color: '#0B0B0B', marginBottom: 4 },
-  modalSub: { fontSize: FONT_SIZES.sm, color: '#71717A', textAlign: 'center', marginBottom: SPACING.lg },
+  modalTitle: { fontSize: FONT_SIZES.xl, fontWeight: '900', color: COLORS.textPrimary, marginBottom: 4 },
+  modalSub: { fontSize: FONT_SIZES.sm, color: COLORS.textSecondary, textAlign: 'center', marginBottom: SPACING.lg },
   starsRow: { flexDirection: 'row', marginBottom: 8 },
-  ratingTextLabel: { fontSize: FONT_SIZES.xs, fontWeight: '800', color: '#0B0B0B', marginBottom: SPACING.lg },
+  ratingTextLabel: { fontSize: FONT_SIZES.xs, fontWeight: '800', color: COLORS.textPrimary, marginBottom: SPACING.lg },
   commentInput: {
     width: '100%',
-    backgroundColor: '#F8F8FA',
+    backgroundColor: COLORS.bg,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
-    borderRadius: 16,
+    borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.md,
     fontSize: FONT_SIZES.sm,
-    color: '#0B0B0B',
+    color: COLORS.textPrimary,
     minHeight: 90,
     textAlignVertical: 'top',
     marginBottom: SPACING.lg,
   },
-  submitBtn: { width: '100%', backgroundColor: '#FFCA27', borderRadius: 16, height: 50 },
+  submitBtn: { width: '100%', backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.lg, height: 50 },
 });

@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONT_SIZES, SPACING } from '../constants';
+import { COLORS, FONT_SIZES, SPACING, SHADOWS, BORDER_RADIUS } from '../constants';
 import { tasksApi, categoriesApi } from '../services';
 import { Category } from '../types';
 import { Button } from '../components/ui/Button';
@@ -108,10 +108,7 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
     try {
       setFetchingLocation(true);
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        alert('Izin akses lokasi ditolak');
-        return;
-      }
+      if (status !== 'granted') { alert('Izin akses lokasi ditolak'); return; }
       const loc = await Location.getCurrentPositionAsync({});
       setLatitude(loc.coords.latitude);
       setLongitude(loc.coords.longitude);
@@ -140,16 +137,33 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
   const handleSubmit = async () => {
     try {
       setLoading(true);
+
+      const uploadedPhotos: string[] = [];
+      for (const uri of photos) {
+        if (uri.startsWith('file://')) {
+          const formData = new FormData();
+          const filename = uri.split('/').pop() || 'task.jpg';
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : `image`;
+          formData.append('file', { uri, name: filename, type } as any);
+          const res = await tasksApi.uploadTaskPhoto(formData);
+          uploadedPhotos.push(res.url);
+        } else {
+          uploadedPhotos.push(uri);
+        }
+      }
+
       await tasksApi.create({
-        title: title || 'Butuh 3 orang bantu bersihkan rumah bekas banjir',
-        description: description || title,
-        budget: parseInt(rawBudget, 10) || 250000,
-        duration: duration || '6 Jam',
-        categoryId: selectedCategoryId || (categories[0]?.id || 'cmd0category001'),
+        title: title,
+        description: description,
+        budget: parseInt(rawBudget, 10),
+        duration: duration,
+        categoryId: selectedCategoryId,
         helperNeeded: 3,
-        address: address || 'Bekasi Timur, Kota Bekasi',
+        address: address,
         latitude,
         longitude,
+        photos: uploadedPhotos,
       });
       toast.show({ type: 'success', title: 'Sukses', message: 'Task berhasil dipublikasikan!' });
       navigation.goBack();
@@ -168,7 +182,7 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
       {/* Header Bar */}
       <View style={[styles.wizardHeader, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={handlePrevStep}>
-          <Ionicons name="chevron-back" size={24} color="#0B0B0B" />
+          <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.wizardTitle}>Buat Task Baru</Text>
         <Text style={styles.stepCounterText}>{currentStep}/{totalSteps}</Text>
@@ -188,19 +202,17 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Step 1: Apa yang ingin dibantu & Kategori */}
+        {/* Step 1 */}
         {currentStep === 1 && (
           <View style={styles.stepContainer}>
             <Text style={styles.stepBigTitle}>Apa yang ingin dibantu?</Text>
-            <Text style={styles.stepSubtitle}>
-              Ceritakan secara singkat task yang Anda butuhkan
-            </Text>
+            <Text style={styles.stepSubtitle}>Ceritakan secara singkat task yang Anda butuhkan</Text>
 
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.textAreaInput}
                 placeholder="Contoh: Bersihkan rumah, antar barang, potong rumput, dll"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={COLORS.slate400}
                 value={title}
                 onChangeText={setTitle}
                 multiline
@@ -210,7 +222,6 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
               <Text style={styles.charCounterText}>{title.length}/80</Text>
             </View>
 
-            {/* Dynamic Category Chips Selection */}
             <Text style={[styles.fieldLabel, { marginTop: SPACING.lg }]}>Pilih Kategori Task</Text>
             <View style={styles.categoryChipsGrid}>
               {categories.map((c) => {
@@ -218,10 +229,7 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
                 return (
                   <TouchableOpacity
                     key={c.id}
-                    style={[
-                      styles.categoryChipPill,
-                      isSelected && styles.categoryChipPillSelected,
-                    ]}
+                    style={[styles.categoryChipPill, isSelected && styles.categoryChipPillSelected]}
                     onPress={() => setSelectedCategoryId(c.id)}
                     activeOpacity={0.8}
                   >
@@ -231,12 +239,7 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
                       color={isSelected ? COLORS.textPrimary : COLORS.textSecondary}
                       style={{ marginRight: 6 }}
                     />
-                    <Text
-                      style={[
-                        styles.categoryChipText,
-                        isSelected && styles.categoryChipTextSelected,
-                      ]}
-                    >
+                    <Text style={[styles.categoryChipText, isSelected && styles.categoryChipTextSelected]}>
                       {c.name}
                     </Text>
                   </TouchableOpacity>
@@ -246,13 +249,12 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
           </View>
         )}
 
-        {/* Step 2/6: Dimana lokasinya? */}
+        {/* Step 2 */}
         {currentStep === 2 && (
           <View style={styles.stepContainer}>
             <Text style={styles.stepBigTitle}>Dimana lokasinya?</Text>
             <Text style={styles.stepSubtitle}>Pilih lokasi task Anda</Text>
 
-            {/* Map Card Container */}
             <View style={styles.mapCardContainer}>
               <TaskMapView
                 latitude={latitude || -6.2383}
@@ -260,7 +262,6 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
                 title={title || 'Lokasi Task'}
                 address={address}
               />
-
               <TouchableOpacity
                 style={styles.floatingLocationPill}
                 onPress={handleGetLocation}
@@ -268,7 +269,7 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
                 activeOpacity={0.85}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Ionicons name="location-sharp" size={14} color="#0B0B0B" style={{ marginRight: 4 }} />
+                  <Ionicons name="location-sharp" size={14} color={COLORS.textPrimary} style={{ marginRight: 4 }} />
                   <Text style={styles.floatingLocationPillText}>
                     {fetchingLocation ? 'Mengambil...' : 'Gunakan Lokasi Saya'}
                   </Text>
@@ -276,21 +277,20 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
               </TouchableOpacity>
             </View>
 
-            {/* Address Input Field */}
             <View style={styles.addressInputBox}>
               <TextInput
                 style={styles.addressTextInput}
                 placeholder="Contoh: Bekasi Timur, Kota Bekasi"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={COLORS.slate400}
                 value={address}
                 onChangeText={setAddress}
               />
-              <Ionicons name="location" size={18} color="#0B0B0B" />
+              <Ionicons name="location" size={18} color={COLORS.textPrimary} />
             </View>
           </View>
         )}
 
-        {/* Step 3/6: Berapa budget yang Anda siapkan? */}
+        {/* Step 3 */}
         {currentStep === 3 && (
           <View style={styles.stepContainer}>
             <Text style={styles.stepBigTitle}>Berapa budget yang Anda siapkan?</Text>
@@ -311,13 +311,13 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
               <Switch
                 value={isNego}
                 onValueChange={setIsNego}
-                trackColor={{ false: COLORS.border, true: COLORS.warmYellow }}
+                trackColor={{ false: COLORS.border, true: COLORS.primary }}
               />
             </View>
           </View>
         )}
 
-        {/* Step 4/6: Kapan task ini dibutuhkan? (Interactive Date & Duration) */}
+        {/* Step 4 */}
         {currentStep === 4 && (
           <View style={styles.stepContainer}>
             <Text style={styles.stepBigTitle}>Kapan task ini dibutuhkan?</Text>
@@ -332,9 +332,7 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
                   onPress={() => setDateText(d)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.optionChipText, dateText === d && styles.optionChipTextSelected]}>
-                    {d}
-                  </Text>
+                  <Text style={[styles.optionChipText, dateText === d && styles.optionChipTextSelected]}>{d}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -348,25 +346,21 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
                   onPress={() => setDuration(dur)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.optionChipText, duration === dur && styles.optionChipTextSelected]}>
-                    {dur}
-                  </Text>
+                  <Text style={[styles.optionChipText, duration === dur && styles.optionChipTextSelected]}>{dur}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         )}
 
-        {/* Step 5/6: Tambahkan foto (opsional) */}
+        {/* Step 5 */}
         {currentStep === 5 && (
           <View style={styles.stepContainer}>
             <Text style={styles.stepBigTitle}>Tambahkan foto (opsional)</Text>
-            <Text style={styles.stepSubtitle}>
-              Foto membantu helper memahami task Anda
-            </Text>
+            <Text style={styles.stepSubtitle}>Foto membantu helper memahami task Anda</Text>
 
             <TouchableOpacity style={styles.dashedAddPhotoBox} onPress={handlePickPhoto} activeOpacity={0.8}>
-              <Ionicons name="camera-outline" size={32} color="#0B0B0B" style={{ marginBottom: 4 }} />
+              <Ionicons name="camera-outline" size={32} color={COLORS.textPrimary} style={{ marginBottom: 4 }} />
               <Text style={styles.addPhotoTitle}>Tambah Foto</Text>
               <Text style={styles.addPhotoSub}>Maks. 5 foto</Text>
             </TouchableOpacity>
@@ -379,7 +373,7 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
                     style={styles.deleteBadge}
                     onPress={() => setPhotos(photos.filter((_, i) => i !== idx))}
                   >
-                    <Ionicons name="close" size={12} color="#FFFFFF" />
+                    <Ionicons name="close" size={12} color={COLORS.white} />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -387,7 +381,7 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
           </View>
         )}
 
-        {/* Step 6: Review & Finalize */}
+        {/* Step 6 */}
         {currentStep === 6 && (
           <View style={styles.stepContainer}>
             <Text style={styles.stepBigTitle}>Ringkasan Task</Text>
@@ -396,19 +390,30 @@ export const CreateTaskScreen: React.FC<NativeStackScreenProps<RootStackParamLis
             <View style={styles.reviewSummaryBox}>
               <Text style={styles.reviewTitleText}>{title || 'Bersihkan Rumah'}</Text>
               <Text style={styles.reviewPriceText}>Rp {Number(rawBudget).toLocaleString('id-ID')}</Text>
-              <Text style={styles.reviewAddressText}>📍 {address || 'Bekasi Timur'}</Text>
-              <Text style={styles.reviewMetaText}>
-                🗓️ {dateText} • ⏱️ {duration} • 🏷️ {categories.find(c => c.id === selectedCategoryId)?.name || 'Kebersihan'}
-              </Text>
+              <View style={styles.reviewMetaRow}>
+                <Ionicons name="location-outline" size={14} color={COLORS.textSecondary} style={{ marginRight: 4 }} />
+                <Text style={styles.reviewMetaText}>{address || 'Bekasi Timur'}</Text>
+              </View>
+              <View style={styles.reviewMetaRow}>
+                <Ionicons name="calendar-outline" size={14} color={COLORS.primary} style={{ marginRight: 4 }} />
+                <Ionicons name="time-outline" size={14} color={COLORS.primary} style={{ marginRight: 4 }} />
+                <Text style={styles.reviewMetaText}>
+                  {dateText} • {duration}
+                </Text>
+              </View>
+              <View style={styles.reviewMetaRow}>
+                <Ionicons name="pricetag-outline" size={14} color={COLORS.primary} style={{ marginRight: 4 }} />
+                <Text style={styles.reviewMetaText}>{categories.find(c => c.id === selectedCategoryId)?.name || 'Kebersihan'}</Text>
+              </View>
             </View>
           </View>
         )}
       </ScrollView>
 
-      {/* Sticky Bottom Navigation Controls */}
+      {/* Sticky Bottom Navigation */}
       <View style={styles.stickyBottomBar}>
         <Button
-          title={currentStep === totalSteps ? 'Publikasikan Task 🚀' : 'Lanjutkan ➔'}
+          title={currentStep === totalSteps ? 'Publikasikan Task' : 'Lanjutkan'}
           onPress={handleNextStep}
           loading={loading}
           style={styles.primaryActionBtn}
@@ -426,6 +431,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingBottom: SPACING.xs,
     backgroundColor: COLORS.surface,
+    ...SHADOWS.sm,
   },
   backBtn: { padding: 4 },
   wizardTitle: { fontSize: FONT_SIZES.base, fontWeight: '900', color: COLORS.textPrimary },
@@ -441,264 +447,93 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 4,
     backgroundColor: COLORS.border,
-    borderRadius: 2,
+    borderRadius: BORDER_RADIUS.xs,
   },
   progressSegmentActive: {
-    backgroundColor: COLORS.warmYellow,
+    backgroundColor: COLORS.primary,
   },
 
-  scrollContent: {
-    paddingHorizontal: SPACING.lg,
-    paddingBottom: 100,
-  },
-  stepContainer: {
-    marginTop: SPACING.md,
-  },
-  stepBigTitle: {
-    fontSize: FONT_SIZES['2xl'],
-    fontWeight: '900',
-    color: COLORS.textPrimary,
-    letterSpacing: -0.5,
-    marginBottom: 4,
-  },
-  stepSubtitle: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.lg,
-  },
+  scrollContent: { paddingHorizontal: SPACING.lg, paddingBottom: 100 },
+  stepContainer: { marginTop: SPACING.md },
+  stepBigTitle: { fontSize: FONT_SIZES['2xl'], fontWeight: '900', color: COLORS.textPrimary, letterSpacing: -0.5, marginBottom: 4 },
+  stepSubtitle: { fontSize: FONT_SIZES.sm, color: COLORS.textSecondary, marginBottom: SPACING.lg },
 
   inputWrapper: { position: 'relative' },
   textAreaInput: {
     backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 16,
-    padding: SPACING.md,
-    fontSize: FONT_SIZES.base,
-    color: COLORS.textPrimary,
-    minHeight: 120,
-    textAlignVertical: 'top',
+    borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.lg, padding: SPACING.md,
+    fontSize: FONT_SIZES.base, color: COLORS.textPrimary,
+    minHeight: 120, textAlignVertical: 'top',
   },
-  charCounterText: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    fontSize: 11,
-    color: COLORS.slate400,
-  },
+  charCounterText: { position: 'absolute', bottom: 12, right: 12, fontSize: 11, color: COLORS.slate400 },
 
-  fieldLabel: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.xs,
-  },
-
-  categoryChipsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
+  fieldLabel: { fontSize: FONT_SIZES.sm, fontWeight: '800', color: COLORS.textPrimary, marginBottom: SPACING.xs },
+  categoryChipsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   categoryChipPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: COLORS.bg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 20, backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border,
   },
-  categoryChipPillSelected: {
-    backgroundColor: COLORS.warmYellow,
-    borderColor: COLORS.warmYellow,
-  },
-  categoryChipText: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-  },
-  categoryChipTextSelected: {
-    color: COLORS.textPrimary,
-    fontWeight: '900',
-  },
+  categoryChipPillSelected: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  categoryChipText: { fontSize: FONT_SIZES.xs, fontWeight: '700', color: COLORS.textSecondary },
+  categoryChipTextSelected: { color: COLORS.textPrimary, fontWeight: '900' },
 
-  mapCardContainer: {
-    height: 180,
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginBottom: SPACING.md,
-    position: 'relative',
-  },
+  mapCardContainer: { height: 180, borderRadius: BORDER_RADIUS['2xl'], overflow: 'hidden', marginBottom: SPACING.md, position: 'relative' },
   floatingLocationPill: {
-    position: 'absolute',
-    bottom: 12,
-    alignSelf: 'center',
-    backgroundColor: COLORS.warmYellow,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    position: 'absolute', bottom: 12, alignSelf: 'center',
+    backgroundColor: COLORS.primary, paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 20, ...SHADOWS.sm,
   },
-  floatingLocationPillText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-  },
+  floatingLocationPillText: { fontSize: 11, fontWeight: '800', color: COLORS.textPrimary },
   addressInputBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 14,
-    paddingHorizontal: SPACING.md,
-    height: 48,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface,
+    borderWidth: 1, borderColor: COLORS.border, borderRadius: 14,
+    paddingHorizontal: SPACING.md, height: 48,
   },
-  addressTextInput: {
-    flex: 1,
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textPrimary,
-  },
+  addressTextInput: { flex: 1, fontSize: FONT_SIZES.sm, color: COLORS.textPrimary },
 
   budgetDisplayBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.bg,
-    borderRadius: 20,
-    paddingHorizontal: SPACING.lg,
-    height: 70,
-    marginBottom: SPACING.md,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg,
+    borderRadius: 20, paddingHorizontal: SPACING.lg, height: 70, marginBottom: SPACING.md,
   },
-  currencyPrefix: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: '900',
-    color: COLORS.textPrimary,
-    marginRight: 8,
-  },
-  budgetAmountInput: {
-    flex: 1,
-    fontSize: FONT_SIZES['2xl'],
-    fontWeight: '900',
-    color: COLORS.textPrimary,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  toggleLabel: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
+  currencyPrefix: { fontSize: FONT_SIZES.xl, fontWeight: '900', color: COLORS.textPrimary, marginRight: 8 },
+  budgetAmountInput: { flex: 1, fontSize: FONT_SIZES['2xl'], fontWeight: '900', color: COLORS.textPrimary },
+  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
+  toggleLabel: { fontSize: FONT_SIZES.sm, fontWeight: '700', color: COLORS.textPrimary },
 
-  optionsChipRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: SPACING.md,
-  },
-  optionsChipGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  optionChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 16,
-    backgroundColor: COLORS.bg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  optionChipSelected: {
-    backgroundColor: COLORS.warmYellow,
-    borderColor: COLORS.warmYellow,
-  },
-  optionChipText: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-  },
-  optionChipTextSelected: {
-    color: COLORS.textPrimary,
-    fontWeight: '900',
-  },
+  optionsChipRow: { flexDirection: 'row', gap: 8, marginBottom: SPACING.md },
+  optionsChipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  optionChip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16, backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border },
+  optionChipSelected: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  optionChipText: { fontSize: FONT_SIZES.xs, fontWeight: '700', color: COLORS.textSecondary },
+  optionChipTextSelected: { color: COLORS.textPrimary, fontWeight: '900' },
 
   dashedAddPhotoBox: {
-    height: 120,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: COLORS.warmYellow,
-    backgroundColor: COLORS.warmYellowBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
+    height: 120, borderRadius: 20, borderWidth: 1, borderStyle: 'dashed',
+    borderColor: COLORS.primary, backgroundColor: COLORS.primaryBg,
+    justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.md,
   },
-  addPhotoTitle: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-  },
-  addPhotoSub: {
-    fontSize: 10,
-    color: COLORS.textSecondary,
-  },
-  thumbGalleryRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  thumbBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
-    position: 'relative',
-  },
-  thumbImage: { width: '100%', height: '100%', borderRadius: 12 },
+  addPhotoTitle: { fontSize: FONT_SIZES.xs, fontWeight: '800', color: COLORS.textPrimary },
+  addPhotoSub: { fontSize: 10, color: COLORS.textSecondary },
+  thumbGalleryRow: { flexDirection: 'row', gap: 8 },
+  thumbBox: { width: 64, height: 64, borderRadius: BORDER_RADIUS.md, position: 'relative' },
+  thumbImage: { width: '100%', height: '100%', borderRadius: BORDER_RADIUS.md },
   deleteBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: COLORS.secondary,
-    borderRadius: 10,
-    width: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: 'absolute', top: -4, right: -4,
+    backgroundColor: COLORS.secondary, borderRadius: 10,
+    width: 18, height: 18, justifyContent: 'center', alignItems: 'center',
   },
 
-  reviewSummaryBox: {
-    backgroundColor: COLORS.bg,
-    borderRadius: 20,
-    padding: SPACING.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
+  reviewSummaryBox: { backgroundColor: COLORS.bg, borderRadius: 20, padding: SPACING.lg, borderWidth: 1, borderColor: COLORS.border },
   reviewTitleText: { fontSize: FONT_SIZES.lg, fontWeight: '900', color: COLORS.textPrimary, marginBottom: 4 },
-  reviewPriceText: { fontSize: FONT_SIZES.base, fontWeight: '900', color: COLORS.blue600, marginBottom: 8 },
-  reviewAddressText: { fontSize: FONT_SIZES.xs, color: COLORS.textSecondary, marginBottom: 4 },
+  reviewPriceText: { fontSize: FONT_SIZES.base, fontWeight: '900', color: COLORS.blue600, marginBottom: 12 },
+  reviewMetaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   reviewMetaText: { fontSize: FONT_SIZES.xs, fontWeight: '700', color: COLORS.textPrimary },
 
   stickyBottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: COLORS.surface, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md,
+    borderTopWidth: 1, borderTopColor: COLORS.border,
   },
-  primaryActionBtn: {
-    backgroundColor: COLORS.warmYellow,
-    borderRadius: 16,
-    height: 50,
-  },
+  primaryActionBtn: { backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.lg, height: 50 },
 });

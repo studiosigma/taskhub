@@ -77,6 +77,11 @@ export const useAuth = create<AuthState>((set, get) => ({
           isLoading: false,
           activeRole: (savedRole as UserRole) || 'HELPER',
         });
+
+        // Always register push token on app start/hydrate if authenticated
+        notificationService.registerForPushNotifications().then((token) => {
+          if (token) usersApi.updateProfile({ fcmToken: token } as any).catch(() => {});
+        });
       } else {
         set({ isLoading: false });
       }

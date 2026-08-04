@@ -13,10 +13,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONT_SIZES, SPACING } from '../../constants';
+import { COLORS, FONT_SIZES, SPACING, SHADOWS, BORDER_RADIUS } from '../../constants';
 
 const { height: WINDOW_HEIGHT } = Dimensions.get('window');
-const SHEET_TOP_OFFSET = 80; // How far from top the sheet can open
+const SHEET_TOP_OFFSET = 80;
 
 interface BottomSheetOption {
   label: string;
@@ -29,7 +29,7 @@ interface BottomSheetProps {
   visible: boolean;
   onClose: () => void;
   title?: string;
-  snapPoints?: number; // 0-1 fraction, default 0.5
+  snapPoints?: number;
   children?: React.ReactNode;
   options?: BottomSheetOption[];
   selected?: string;
@@ -207,13 +207,9 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: COLORS.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 16,
+    borderTopLeftRadius: BORDER_RADIUS['2xl'],
+    borderTopRightRadius: BORDER_RADIUS['2xl'],
+    ...SHADOWS.lg,
   },
   handleRow: {
     alignItems: 'center',
@@ -248,11 +244,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: SPACING.md,
-    borderRadius: 14,
+    borderRadius: BORDER_RADIUS.md,
     marginBottom: 4,
   },
   optionRowSelected: {
-    backgroundColor: COLORS.warmYellowLight,
+    backgroundColor: COLORS.primaryLight,
   },
   optionLabel: {
     fontSize: FONT_SIZES.sm,

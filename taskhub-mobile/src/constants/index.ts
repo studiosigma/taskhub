@@ -34,12 +34,12 @@ export const FONT_SIZES = {
 } as const;
 
 // Colors — Presisi Funni Warm Yellow UI Kit Reference
+// Primary: #FFCA27 (Warm Golden Yellow), Dark: #0B0B0B (Charcoal)
 export const COLORS = {
   primary: '#FFCA27',       // Warm Golden Yellow (Primary Brand)
   primaryDark: '#E5B214',   // Darker Golden Yellow
   primaryLight: '#FFE185',  // Light Golden Tint
   secondary: '#0B0B0B',     // Dark Charcoal Accent
-  accent: '#FFCA27',        // Warm Golden Yellow
   skyBlue: '#2D9CDB',       // Semantic Sky Blue
   coralRed: '#EB5757',      // Semantic Coral Red
   mintGreen: '#27AE60',     // Semantic Mint Green
@@ -63,18 +63,13 @@ export const COLORS = {
   slate900: '#0F172A',
   green50: '#DCFCE7',
   green700: '#15803D',
+  primaryBg: '#FFFDF5',    // Warm yellow background tint
   amber50: '#FEF3C7',
   amber800: '#92400E',
   blue50: '#DBEAFE',
   blue600: '#2563EB',
   red50: '#FEE2E2',
   red800: '#991B1B',
-  warmYellow: '#FFCA27',
-  warmYellowLight: '#FFE185',
-  warmYellowBg: '#FFFDF5',
-  starYellow: '#FFCA27',
-  ownerBlue: '#2563EB',
-  helperYellow: '#FFCA27',
 } as const;
 
 // Spacing
@@ -86,3 +81,52 @@ export const SPACING = {
   xl: 20,
   '2xl': 24,
 } as const;
+
+// Border Radius scale — use these constants everywhere for visual consistency
+export const BORDER_RADIUS = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  '2xl': 24,
+  full: 9999,
+} as const;
+
+// Shadow scale — 3-tier system: sm (subtle), md (card), lg (elevated/FAB)
+const shadowSm = Platform.select({
+  ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4 },
+  android: { elevation: 1 },
+  default: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4 },
+});
+
+const shadowMd = Platform.select({
+  ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 8 },
+  android: { elevation: 3 },
+  default: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 8 },
+});
+
+const shadowLg = Platform.select({
+  ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.12, shadowRadius: 12 },
+  android: { elevation: 5 },
+  default: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.12, shadowRadius: 12 },
+});
+
+export const SHADOWS = {
+  sm: shadowSm,
+  md: shadowMd,
+  lg: shadowLg,
+};
+
+// Opacity constants for overlays and states
+export const OPACITY = {
+  overlay: 0.6,     // Modal backdrop
+  disabled: 0.5,    // Disabled button/input
+  subtle: 0.1,      // Very subtle tint
+  medium: 0.7,      // Image overlay text
+} as const;
+
+// Old alias map — keep for runtime reference (used in TaskCard price pill etc.)
+// Deprecated aliases were removed: warmYellow → primary, warmYellowLight → primaryLight,
+// warmYellowBg → use COLORS.primaryLight with opacity, starYellow → primary,
+// ownerBlue → blue600, helperYellow → primary, accent → primary

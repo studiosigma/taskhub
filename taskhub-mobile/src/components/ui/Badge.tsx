@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 type TaskStatus = 'DRAFT' | 'OPEN' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
@@ -11,29 +12,29 @@ interface BadgeConfig {
   label: string;
   bg: string;
   text: string;
-  icon?: string;
+  icon: string;
 }
 
 const BADGE_CONFIGS: Record<string, BadgeConfig> = {
   // Task Statuses
-  OPEN: { label: 'Open', bg: '#DCFCE7', text: '#15803D', icon: '🟢' },
-  DRAFT: { label: 'Draft', bg: '#F1F5F9', text: '#64748B', icon: '📝' },
-  ASSIGNED: { label: 'Terambil', bg: '#DBEAFE', text: '#1E40AF', icon: '👤' },
-  IN_PROGRESS: { label: 'Berjalan', bg: '#FEF3C7', text: '#92400E', icon: '⏳' },
-  COMPLETED: { label: 'Selesai', bg: '#F1F5F9', text: '#475569', icon: '✅' },
-  CANCELLED: { label: 'Dibatalkan', bg: '#FEE2E2', text: '#991B1B', icon: '❌' },
+  OPEN: { label: 'Open', bg: '#DCFCE7', text: '#15803D', icon: 'checkmark-circle' },
+  DRAFT: { label: 'Draft', bg: '#F1F5F9', text: '#64748B', icon: 'document-text-outline' },
+  ASSIGNED: { label: 'Terambil', bg: '#DBEAFE', text: '#1E40AF', icon: 'person-outline' },
+  IN_PROGRESS: { label: 'Berjalan', bg: '#FEF3C7', text: '#92400E', icon: 'time-outline' },
+  COMPLETED: { label: 'Selesai', bg: '#F1F5F9', text: '#475569', icon: 'checkmark-circle' },
+  CANCELLED: { label: 'Dibatalkan', bg: '#FEE2E2', text: '#991B1B', icon: 'close-circle' },
 
   // Application Statuses
-  PENDING: { label: 'Pending', bg: '#FEF3C7', text: '#92400E', icon: '⏳' },
-  ACCEPTED: { label: 'Diterima', bg: '#DCFCE7', text: '#15803D', icon: '✅' },
-  REJECTED: { label: 'Ditolak', bg: '#FEE2E2', text: '#991B1B', icon: '❌' },
-  WITHDRAWN: { label: 'Dibatalkan', bg: '#F1F5F9', text: '#64748B', icon: '↩️' },
+  PENDING: { label: 'Pending', bg: '#FEF3C7', text: '#92400E', icon: 'time-outline' },
+  ACCEPTED: { label: 'Diterima', bg: '#DCFCE7', text: '#15803D', icon: 'checkmark-circle' },
+  REJECTED: { label: 'Ditolak', bg: '#FEE2E2', text: '#991B1B', icon: 'close-circle' },
+  WITHDRAWN: { label: 'Dibatalkan', bg: '#F1F5F9', text: '#64748B', icon: 'return-up-back-outline' },
 
   // Verification Statuses
-  IDLE: { label: 'Belum Verifikasi', bg: '#F1F5F9', text: '#64748B', icon: '🔲' },
-  APPROVED: { label: 'Terverifikasi', bg: '#DCFCE7', text: '#15803D', icon: '✅' },
-  VERIFIED: { label: 'Terverifikasi', bg: '#DCFCE7', text: '#15803D', icon: '✅' },
-  VERIFICATION_REJECTED: { label: 'Ditolak', bg: '#FEE2E2', text: '#991B1B', icon: '❌' },
+  IDLE: { label: 'Belum Verifikasi', bg: '#F1F5F9', text: '#64748B', icon: 'square-outline' },
+  APPROVED: { label: 'Terverifikasi', bg: '#DCFCE7', text: '#15803D', icon: 'checkmark-circle' },
+  VERIFIED: { label: 'Terverifikasi', bg: '#DCFCE7', text: '#15803D', icon: 'checkmark-circle' },
+  VERIFICATION_REJECTED: { label: 'Ditolak', bg: '#FEE2E2', text: '#991B1B', icon: 'close-circle' },
 };
 
 interface BadgeProps {
@@ -53,6 +54,7 @@ const BadgeComponent: React.FC<BadgeProps> = ({
     label: status,
     bg: '#F1F5F9',
     text: '#64748B',
+    icon: 'ellipse-outline',
   };
 
   const sizeStyles = {
@@ -73,10 +75,13 @@ const BadgeComponent: React.FC<BadgeProps> = ({
         style,
       ]}
     >
-      {showIcon && config.icon && (
-        <Text style={[styles.icon, { fontSize: sizeStyles.iconSize }]}>
-          {config.icon}{' '}
-        </Text>
+      {showIcon && (
+        <Ionicons
+          name={config.icon as any}
+          size={sizeStyles.iconSize}
+          color={config.text}
+          style={{ marginRight: 3 }}
+        />
       )}
       <Text
         style={[
@@ -101,9 +106,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     alignSelf: 'flex-start',
-  },
-  icon: {
-    lineHeight: undefined,
   },
   label: {
     fontWeight: '800',

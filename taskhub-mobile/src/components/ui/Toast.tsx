@@ -1,14 +1,15 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import {
   Animated,
-  Text,
   StyleSheet,
   TouchableOpacity,
   View,
   Dimensions,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, FONT_SIZES, SPACING } from '../../constants';
+import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../../constants';
+import { Text } from 'react-native';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -28,11 +29,11 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
-const TOAST_CONFIG: Record<ToastType, { icon: string; bg: string; border: string }> = {
-  success: { icon: '✅', bg: '#DCFCE7', border: '#86EFAC' },
-  error: { icon: '❌', bg: '#FEE2E2', border: '#FCA5A5' },
-  info: { icon: 'ℹ️', bg: '#DBEAFE', border: '#93C5FD' },
-  warning: { icon: '⚠️', bg: '#FEF3C7', border: '#FCD34D' },
+const TOAST_CONFIG: Record<ToastType, { icon: string; iconColor: string; bg: string; border: string }> = {
+  success: { icon: 'checkmark-circle', iconColor: COLORS.mintGreen, bg: '#DCFCE7', border: '#86EFAC' },
+  error: { icon: 'close-circle', iconColor: COLORS.coralRed, bg: '#FEE2E2', border: '#FCA5A5' },
+  info: { icon: 'information-circle', iconColor: COLORS.skyBlue, bg: '#DBEAFE', border: '#93C5FD' },
+  warning: { icon: 'warning', iconColor: '#92400E', bg: '#FEF3C7', border: '#FCD34D' },
 };
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -113,9 +114,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 },
               ]}
             >
-              <Text style={styles.icon}>{config.icon}</Text>
+              <Ionicons name={config.icon as any} size={20} color={config.iconColor} style={{ marginRight: 10 }} />
               <View style={styles.content}>
-                <Text style={styles.title}>{toast.title}</Text>
+                <Text style={[styles.title, { color: COLORS.textPrimary }]}>{toast.title}</Text>
                 {toast.message && (
                   <Text style={styles.message}>{toast.message}</Text>
                 )}
@@ -135,7 +136,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                   onPress={() => removeToast(toast.id)}
                   style={styles.closeBtn}
                 >
-                  <Text style={styles.closeText}>✕</Text>
+                  <Ionicons name="close" size={16} color={COLORS.slate500} />
                 </TouchableOpacity>
               )}
             </Animated.View>
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: SPACING.md,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -173,41 +174,31 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
-  icon: {
-    fontSize: 18,
-    marginRight: 10,
-  },
   content: {
     flex: 1,
   },
   title: {
     fontSize: FONT_SIZES.sm,
     fontWeight: '800',
-    color: '#0B0B0B',
   },
   message: {
     fontSize: 12,
-    color: '#475569',
+    color: COLORS.slate600,
     marginTop: 2,
   },
   closeBtn: {
     padding: 6,
     marginLeft: 8,
   },
-  closeText: {
-    fontSize: 14,
-    color: '#64748B',
-    fontWeight: '700',
-  },
   actionBtn: {
-    backgroundColor: '#0B0B0B',
+    backgroundColor: COLORS.textPrimary,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
     marginLeft: 8,
   },
   actionText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 11,
     fontWeight: '800',
   },

@@ -62,7 +62,16 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('markAsRead')
   async handleMarkAsRead(client: Socket, payload: { conversationId: string; userId: string }) {
-    // Mark messages as read - calling service directly
+    await this.chatsService.markMessagesAsRead(payload.conversationId, payload.userId);
     client.to(`conversation:${payload.conversationId}`).emit('messagesRead', { userId: payload.userId });
+  }
+
+  @SubscribeMessage('locationUpdated')
+  handleLocationUpdate(client: Socket, payload: { conversationId: string; latitude: number; longitude: number; userId: string }) {
+    client.to(`conversation:${payload.conversationId}`).emit('locationUpdated', {
+      userId: payload.userId,
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+    });
   }
 }

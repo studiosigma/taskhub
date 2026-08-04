@@ -8,6 +8,7 @@ interface TaskMapViewProps {
   longitude?: number;
   title?: string;
   address?: string;
+  helperLocation?: { latitude: number; longitude: number };
 }
 
 export const TaskMapView: React.FC<TaskMapViewProps> = ({
@@ -15,6 +16,7 @@ export const TaskMapView: React.FC<TaskMapViewProps> = ({
   longitude = 106.8456,
   title = 'Lokasi Task',
   address,
+  helperLocation,
 }) => {
   const initialRegion = {
     latitude,
@@ -40,6 +42,13 @@ export const TaskMapView: React.FC<TaskMapViewProps> = ({
             title={title}
             description={address}
           />
+          {helperLocation && (
+            <Marker
+              coordinate={helperLocation}
+              title="Helper"
+              pinColor="blue"
+            />
+          )}
         </MapView>
       </View>
     </View>

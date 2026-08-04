@@ -52,6 +52,17 @@ export class ChatsService {
     return message;
   }
 
+  async markMessagesAsRead(conversationId: string, userId: string) {
+    return this.prisma.message.updateMany({
+      where: {
+        conversationId,
+        senderId: { not: userId },
+        isRead: false,
+      },
+      data: { isRead: true },
+    });
+  }
+
   async getConversation(conversationId: string, userId: string) {
     const conv = await this.prisma.conversation.findFirst({
       where: { id: conversationId, participants: { some: { userId } } },

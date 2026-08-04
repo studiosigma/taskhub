@@ -21,6 +21,10 @@ export type RootStackParamList = {
   Profile: undefined;
   IdentityVerification: undefined;
   Support: undefined;
+  Reviews: undefined;
+  Addresses: undefined;
+  Security: undefined;
+  FinancialDashboard: undefined;
 };
 
 export type MainTabParamList = {
@@ -126,6 +130,8 @@ export interface Message {
   isRead: boolean;
   createdAt: string;
   sender?: User;
+  isOptimistic?: boolean;
+  task?: Task;
 }
 
 export interface Conversation {

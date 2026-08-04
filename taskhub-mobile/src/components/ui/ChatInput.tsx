@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, TextInput, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONT_SIZES, SPACING } from '../../constants';
+import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../../constants';
 
 interface ChatInputProps {
   value: string;
@@ -38,9 +38,9 @@ const ChatInput_C: React.FC<ChatInputProps> = ({
         onSubmitEditing={canSend ? onSend : undefined}
       />
       <TouchableOpacity
-        style={[styles.sendBtn, canSend && styles.sendBtnActive]}
+        style={[styles.sendBtn, canSend && styles.sendBtnActive, sending && styles.sendBtnDisabled]}
         onPress={onSend}
-        disabled={!canSend}
+        disabled={!canSend || sending}
         activeOpacity={0.8}
       >
         <Ionicons
@@ -72,11 +72,11 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     backgroundColor: COLORS.slate50,
-    borderRadius: 24,
+    borderRadius: BORDER_RADIUS.full,
     paddingHorizontal: SPACING.lg,
     paddingVertical: 8,
     fontSize: FONT_SIZES.sm,
-    color: COLORS.slate900,
+    color: COLORS.textPrimary,
     maxHeight: 100,
     marginHorizontal: 8,
     borderWidth: 1,
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   sendBtn: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: BORDER_RADIUS.full,
     backgroundColor: COLORS.slate100,
     justifyContent: 'center',
     alignItems: 'center',
@@ -93,5 +93,8 @@ const styles = StyleSheet.create({
   },
   sendBtnActive: {
     backgroundColor: COLORS.blue600,
+  },
+  sendBtnDisabled: {
+    backgroundColor: COLORS.slate200,
   },
 });

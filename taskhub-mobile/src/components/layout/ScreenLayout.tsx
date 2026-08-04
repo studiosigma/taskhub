@@ -12,13 +12,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeColor } from '../../hooks/useThemeColor';
-import { FONT_SIZES, SPACING } from '../../constants';
+import { COLORS, FONT_SIZES, SPACING, SHADOWS, BORDER_RADIUS } from '../../constants';
 
 type HeaderAction = {
   icon: string;
   onPress: () => void;
   badge?: number;
 };
+
+type HeaderMode = 'standard' | 'hidden';
 
 interface ScreenLayoutProps {
   title?: string;
@@ -35,6 +37,7 @@ interface ScreenLayoutProps {
   headerColor?: string;
   contentStyle?: ViewStyle;
   stickyBottom?: React.ReactNode;
+  mode?: HeaderMode;
 }
 
 export const ScreenLayout: React.FC<ScreenLayoutProps> = ({
@@ -50,13 +53,14 @@ export const ScreenLayout: React.FC<ScreenLayoutProps> = ({
   headerColor,
   contentStyle,
   stickyBottom,
+  mode = 'standard',
 }) => {
   const insets = useSafeAreaInsets();
   const theme = useThemeColor();
-  const bg = headerColor || '#FFFFFF';
+  const bg = headerColor || COLORS.surface;
 
   const renderLeftAction = () => {
-    if (!leftAction) return <View style={styles.headerPlaceholder} />;
+    if (!leftAction || mode === 'hidden') return <View style={styles.headerPlaceholder} />;
 
     if (leftAction === 'back') {
       return (
@@ -66,7 +70,7 @@ export const ScreenLayout: React.FC<ScreenLayoutProps> = ({
           activeOpacity={0.7}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="chevron-back" size={24} color="#0B0B0B" />
+          <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
       );
     }
@@ -78,7 +82,7 @@ export const ScreenLayout: React.FC<ScreenLayoutProps> = ({
           activeOpacity={0.7}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="menu" size={24} color="#0B0B0B" />
+          <Ionicons name="menu" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
       );
     }
@@ -87,7 +91,7 @@ export const ScreenLayout: React.FC<ScreenLayoutProps> = ({
   };
 
   const renderRightActions = () => {
-    if (!rightActions?.length) return <View style={styles.headerPlaceholder} />;
+    if (!rightActions?.length || mode === 'hidden') return <View style={styles.headerPlaceholder} />;
 
     return (
       <View style={styles.headerRightGroup}>
@@ -99,7 +103,7 @@ export const ScreenLayout: React.FC<ScreenLayoutProps> = ({
             activeOpacity={0.7}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name={action.icon as any} size={22} color="#0B0B0B" />
+            <Ionicons name={action.icon as any} size={22} color={COLORS.textPrimary} />
             {action.badge ? (
               <View style={styles.badgeDot}>
                 <Text style={styles.badgeText}>
@@ -113,14 +117,14 @@ export const ScreenLayout: React.FC<ScreenLayoutProps> = ({
     );
   };
 
-  const header = (
+  const header = mode === 'hidden' ? null : (
     <View
       style={[
         styles.header,
         {
           paddingTop: insets.top + 8,
           backgroundColor: bg,
-          borderBottomColor: '#F4F4F5',
+          borderBottomColor: COLORS.border,
         },
       ]}
     >
@@ -140,7 +144,7 @@ export const ScreenLayout: React.FC<ScreenLayoutProps> = ({
 
   const wrapperStyle: ViewStyle = {
     flex: 1,
-    backgroundColor: '#F8F8FA',
+    backgroundColor: COLORS.bg,
     paddingBottom: insets.bottom,
   };
 
@@ -193,6 +197,7 @@ export const ScreenLayout: React.FC<ScreenLayoutProps> = ({
 const styles = StyleSheet.create({
   header: {
     borderBottomWidth: 1,
+    ...SHADOWS.sm,
   },
   headerRow: {
     flexDirection: 'row',
@@ -205,7 +210,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: FONT_SIZES.base,
     fontWeight: '900',
-    color: '#0B0B0B',
+    color: COLORS.textPrimary,
     textAlign: 'center',
     flex: 1,
     marginHorizontal: SPACING.sm,
@@ -213,7 +218,7 @@ const styles = StyleSheet.create({
   headerBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: BORDER_RADIUS.full,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -230,8 +235,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 2,
     right: 2,
-    backgroundColor: '#EB5757',
-    borderRadius: 8,
+    backgroundColor: COLORS.danger,
+    borderRadius: BORDER_RADIUS.full,
     minWidth: 16,
     height: 16,
     justifyContent: 'center',
@@ -239,7 +244,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
   },
   badgeText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 9,
     fontWeight: '900',
   },
@@ -253,15 +258,11 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.md,
   },
   stickyBottom: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.md,
     borderTopWidth: 1,
-    borderTopColor: '#F4F4F5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 8,
+    borderTopColor: COLORS.border,
+    ...SHADOWS.md,
   },
 });

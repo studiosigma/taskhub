@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -7,6 +8,13 @@ import { NavigationContainer } from '@react-navigation/native';
 import { useAuth } from './src/hooks/useAuth';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { ToastProvider } from './src/components/ui/Toast';
+import { QueryProvider } from './src/providers/QueryProvider';
+
+Sentry.init({
+  dsn: 'ISI_DSN_ANDA_DARI_SENTRY',
+  // Set tracesSampleRate ke 1.0 untuk mengetes semua error di beta
+  tracesSampleRate: 1.0,
+});
 
 const AppContent: React.FC = () => {
   const { hydrate } = useAuth();
@@ -35,12 +43,14 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <ToastProvider>
-        <NavigationContainer>
-          <AppContent />
-          <StatusBar style="dark" />
-        </NavigationContainer>
-      </ToastProvider>
+      <QueryProvider>
+        <ToastProvider>
+          <NavigationContainer>
+            <AppContent />
+            <StatusBar style="dark" />
+          </NavigationContainer>
+        </ToastProvider>
+      </QueryProvider>
     </SafeAreaProvider>
   );
 }

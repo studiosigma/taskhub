@@ -8,12 +8,15 @@ async function main() {
 
   // ── Categories ──
   const categories = [
-    { name: 'Pindahan', icon: '📦', description: 'Bantu pindahan rumah/kantor' },
-    { name: 'Kebersihan', icon: '🧹', description: 'Bantu bersih-bersih rumah' },
-    { name: 'Event Crew', icon: '🎟️', description: 'Bantu acara event' },
-    { name: 'Tukang', icon: '🔧', description: 'Bantuan perbaikan & renovasi' },
-    { name: 'Driver', icon: '🚗', description: 'Antar jemput & delivery' },
-    { name: 'Belanja', icon: '🛒', description: 'Bantu belanja kebutuhan' },
+    { name: 'Rumah Tangga', icon: '🏠', description: 'Bersihin rumah, cuci AC, potong rumput, service listrik, bor air' },
+    { name: 'Transportasi', icon: '🚗', description: 'Antar jemput, kirim paket, belanja pasar' },
+    { name: 'Pindahan', icon: '📦', description: 'Angkut barang, packing' },
+    { name: 'Digital', icon: '💻', description: 'Desain logo, edit video, bikin caption' },
+    { name: 'Event', icon: '🎉', description: 'Stand by acara, masak untuk hajatan' },
+    { name: 'Jasa Profesional', icon: '👨‍⚖️', description: 'Fotografer, videografer, pangkas rambut, makeup artist' },
+    { name: 'Otomotif', icon: '🏍️', description: 'Cuci mobil, ganti oli, tambal ban, salon mobil' },
+    { name: 'Pendidikan', icon: '📚', description: 'Les privat ngaji, bimbel, kursus bahasa' },
+    { name: 'Jasa Lainnya', icon: '🔧', description: 'Jaga anak, les privat, grooming kucing' },
   ];
 
   for (const cat of categories) {
@@ -61,34 +64,34 @@ async function main() {
 
   const tasks = [
     {
-      id: 'task-1', ownerId: 'user-owner-1', categoryId: catMap['Pindahan'],
-      title: 'Butuh 2 orang bantu pindahan rumah', description: 'Pindahan dari apartemen ke rumah baru. Barang sudah dikemas, butuh bantu angkut ke mobil dan bongkar di tempat tujuan.',
-      budget: 300000, duration: '4 Jam', helperNeeded: 2, address: 'Jakarta Selatan', status: TaskStatus.OPEN,
-    },
-    {
-      id: 'task-2', ownerId: 'user-owner-1', categoryId: catMap['Kebersihan'],
+      id: 'task-1', ownerId: 'user-owner-1', categoryId: catMap['Rumah Tangga'],
       title: 'Bersihin rumah bekas banjir', description: 'Rumah habis kebanjiran, butuh 3 orang buat bersihin lumpur dan nyuci perabotan.',
       budget: 450000, duration: '8 Jam (Full Day)', helperNeeded: 3, address: 'Bekasi Timur', status: TaskStatus.IN_PROGRESS,
     },
     {
-      id: 'task-3', ownerId: 'user-owner-2', categoryId: catMap['Event Crew'],
+      id: 'task-2', ownerId: 'user-owner-2', categoryId: catMap['Rumah Tangga'],
+      title: 'Cuci AC 3 unit rumah', description: 'AC udah 6 bulan nggak dicuci, butuh bantuan service bersihin AC split 3 unit.',
+      budget: 150000, duration: '3 Jam', helperNeeded: 1, address: 'Jakarta Selatan', status: TaskStatus.OPEN,
+    },
+    {
+      id: 'task-3', ownerId: 'user-owner-2', categoryId: catMap['Event'],
       title: 'Crew untuk acara ulang tahun anak', description: 'Butuh 2 orang bantu siap-siap dekorasi, jaga stand makanan, dan bersihin setelah acara.',
       budget: 200000, duration: '5 Jam', helperNeeded: 2, address: 'Bandung', status: TaskStatus.OPEN,
     },
     {
-      id: 'task-4', ownerId: 'user-owner-2', categoryId: catMap['Tukang'],
-      title: 'Perbaiki bocor atap rumah', description: 'Atap bocor parah kalau hujan. Butuh tukang berpengalaman. Material sudah disediakan.',
-      budget: 500000, duration: '6 Jam', helperNeeded: 1, address: 'Depok', status: TaskStatus.OPEN,
-    },
-    {
-      id: 'task-5', ownerId: 'user-owner-1', categoryId: catMap['Driver'],
+      id: 'task-4', ownerId: 'user-owner-1', categoryId: catMap['Transportasi'],
       title: 'Antar Dokumen ke Kantor Client', description: 'Dokumen penting harus sampai hari ini. Butuh driver dari kantor pusat ke client di daerah SCBD.',
       budget: 100000, duration: '2 Jam', helperNeeded: 1, address: 'Jakarta Pusat', status: TaskStatus.COMPLETED,
     },
     {
-      id: 'task-6', ownerId: 'user-owner-2', categoryId: catMap['Belanja'],
+      id: 'task-5', ownerId: 'user-owner-2', categoryId: catMap['Transportasi'],
       title: 'Belanja bahan makanan mingguan', description: 'Butuh bantuan belanja ke pasar tradisional. Daftar belanja sudah ada, tinggal ambil dan anter ke rumah.',
       budget: 50000, duration: '2 Jam', helperNeeded: 1, address: 'Tangerang', status: TaskStatus.OPEN,
+    },
+    {
+      id: 'task-6', ownerId: 'user-owner-1', categoryId: catMap['Pindahan'],
+      title: 'Butuh 2 orang bantu pindahan rumah', description: 'Pindahan dari apartemen ke rumah baru. Barang sudah dikemas, butuh bantu angkut ke mobil dan bongkar di tempat tujuan.',
+      budget: 300000, duration: '4 Jam', helperNeeded: 2, address: 'Jakarta Selatan', status: TaskStatus.OPEN,
     },
   ];
 

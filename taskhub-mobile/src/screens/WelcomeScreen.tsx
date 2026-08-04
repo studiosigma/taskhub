@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONT_SIZES, SPACING } from '../constants';
+import { COLORS, FONT_SIZES, SPACING, SHADOWS, BORDER_RADIUS } from '../constants';
 import { useAuth } from '../hooks/useAuth';
 import type { RootStackParamList } from '../types';
 
@@ -21,62 +21,62 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Brand Logo Header */}
         <View style={styles.brandHeader}>
-          <Ionicons name="briefcase" size={28} color="#0B0B0B" style={{ marginRight: 8 }} />
+          <Ionicons name="briefcase" size={28} color={COLORS.textPrimary} style={{ marginRight: 8 }} />
           <Text style={styles.brandLogoText}>TaskHub</Text>
         </View>
 
-        {/* Hero Illustration Container */}
+        {/* Hero Illustration */}
         <View style={styles.illustrationContainer}>
           <View style={styles.avatarCircleLeft}>
-            <Ionicons name="person" size={40} color="#FFFFFF" />
+            <Ionicons name="person" size={40} color={COLORS.white} />
           </View>
           <View style={styles.avatarCircleRight}>
-            <Ionicons name="construct" size={40} color="#0B0B0B" />
+            <Ionicons name="construct" size={40} color={COLORS.textPrimary} />
           </View>
         </View>
 
         {/* Title & Subtitle */}
-        <Text style={styles.welcomeTitle}>Selamat Datang di TaskHub 👏</Text>
+        <Text style={styles.welcomeTitle}>Selamat Datang di TaskHub</Text>
         <Text style={styles.welcomeSubtitle}>
           Platform yang mempertemukan Anda dengan helper terpercaya di sekitar Anda.
         </Text>
 
-        {/* Role Selection Label */}
+        {/* Role Selection */}
         <Text style={styles.rolePromptLabel}>Hari ini Anda ingin...</Text>
 
-        {/* Role Option 1: Mencari Bantuan (Task Owner - Royal Blue #2563EB) */}
+        {/* Role Option 1: Task Owner */}
         <TouchableOpacity
           style={[styles.roleCard, styles.roleCardBlue]}
           onPress={() => handleSelectRole('OWNER')}
           activeOpacity={0.85}
         >
           <View style={styles.roleIconBadge}>
-            <Ionicons name="search" size={24} color="#FFFFFF" />
+            <Ionicons name="search" size={24} color={COLORS.white} />
           </View>
           <View style={styles.roleTextContainer}>
             <Text style={styles.roleTitleLight}>Mencari Bantuan (Task Owner)</Text>
             <Text style={styles.roleSubtitleLight}>Saya butuh seseorang untuk membantu task saya</Text>
           </View>
           <View style={styles.roleArrowCircleLight}>
-            <Ionicons name="arrow-forward" size={18} color="#2563EB" />
+            <Ionicons name="arrow-forward" size={18} color={COLORS.blue600} />
           </View>
         </TouchableOpacity>
 
-        {/* Role Option 2: Mencari Penghasilan (Helper - Warm Golden Yellow #FFCA27) */}
+        {/* Role Option 2: Helper */}
         <TouchableOpacity
           style={[styles.roleCard, styles.roleCardYellow]}
           onPress={() => handleSelectRole('HELPER')}
           activeOpacity={0.85}
         >
           <View style={styles.roleIconBadgeDark}>
-            <Ionicons name="wallet-outline" size={24} color="#0B0B0B" />
+            <Ionicons name="wallet-outline" size={24} color={COLORS.textPrimary} />
           </View>
           <View style={styles.roleTextContainer}>
             <Text style={styles.roleTitleDark}>Mencari Penghasilan (Helper)</Text>
             <Text style={styles.roleSubtitleDark}>Saya ingin mendapatkan penghasilan tambahan</Text>
           </View>
           <View style={styles.roleArrowCircleDark}>
-            <Ionicons name="arrow-forward" size={18} color="#FFCA27" />
+            <Ionicons name="arrow-forward" size={18} color={COLORS.primary} />
           </View>
         </TouchableOpacity>
 
@@ -91,153 +91,26 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.surface },
-  scrollContent: {
-    paddingHorizontal: SPACING.xl,
-    paddingTop: 60,
-    paddingBottom: 40,
-    alignItems: 'center',
-  },
-  brandHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.xl,
-  },
-  brandLogoText: {
-    fontSize: FONT_SIZES['2xl'],
-    fontWeight: '900',
-    color: COLORS.textPrimary,
-    letterSpacing: -0.5,
-  },
-  illustrationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: SPACING.lg,
-    gap: 20,
-  },
-  avatarCircleLeft: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: COLORS.ownerBlue,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarCircleRight: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: COLORS.warmYellow,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  welcomeTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: '900',
-    color: COLORS.textPrimary,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  welcomeSubtitle: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: SPACING['2xl'],
-  },
-  rolePromptLabel: {
-    fontSize: FONT_SIZES.base,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
-    alignSelf: 'flex-start',
-    marginBottom: SPACING.md,
-  },
-  roleCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 20,
-    padding: SPACING.lg,
-    width: '100%',
-    marginBottom: SPACING.md,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  roleCardBlue: {
-    backgroundColor: COLORS.ownerBlue,
-  },
-  roleCardYellow: {
-    backgroundColor: COLORS.helperYellow,
-  },
-  roleIconBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
-  },
-  roleIconBadgeDark: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: 'rgba(11, 11, 11, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
-  },
-  roleTextContainer: {
-    flex: 1,
-  },
-  roleTitleDark: {
-    fontSize: FONT_SIZES.base,
-    fontWeight: '900',
-    color: COLORS.textPrimary,
-    marginBottom: 2,
-  },
-  roleSubtitleDark: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textPrimary,
-    opacity: 0.85,
-    lineHeight: 16,
-    fontWeight: '600',
-  },
-  roleTitleLight: {
-    fontSize: FONT_SIZES.base,
-    fontWeight: '900',
-    color: COLORS.white,
-    marginBottom: 2,
-  },
-  roleSubtitleLight: {
-    fontSize: FONT_SIZES.xs,
-    color: 'rgba(255, 255, 255, 0.85)',
-    lineHeight: 16,
-  },
-  roleArrowCircleDark: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.secondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  roleArrowCircleLight: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  footnoteText: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginTop: SPACING.lg,
-  },
+  scrollContent: { paddingHorizontal: SPACING.xl, paddingTop: 60, paddingBottom: 40, alignItems: 'center' },
+  brandHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xl },
+  brandLogoText: { fontSize: FONT_SIZES['2xl'], fontWeight: '900', color: COLORS.textPrimary, letterSpacing: -0.5 },
+  illustrationContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginVertical: SPACING.lg, gap: 20 },
+  avatarCircleLeft: { width: 90, height: 90, borderRadius: 45, backgroundColor: COLORS.blue600, justifyContent: 'center', alignItems: 'center' },
+  avatarCircleRight: { width: 90, height: 90, borderRadius: 45, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' },
+  welcomeTitle: { fontSize: FONT_SIZES.xl, fontWeight: '900', color: COLORS.textPrimary, textAlign: 'center', marginBottom: 8 },
+  welcomeSubtitle: { fontSize: FONT_SIZES.sm, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: SPACING['2xl'] },
+  rolePromptLabel: { fontSize: FONT_SIZES.base, fontWeight: '800', color: COLORS.textPrimary, alignSelf: 'flex-start', marginBottom: SPACING.md },
+  roleCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 20, padding: SPACING.lg, width: '100%', marginBottom: SPACING.md, ...SHADOWS.md },
+  roleCardBlue: { backgroundColor: COLORS.blue600 },
+  roleCardYellow: { backgroundColor: COLORS.primary },
+  roleIconBadge: { width: 44, height: 44, borderRadius: BORDER_RADIUS.md, backgroundColor: 'rgba(255, 255, 255, 0.25)', justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md },
+  roleIconBadgeDark: { width: 44, height: 44, borderRadius: BORDER_RADIUS.md, backgroundColor: 'rgba(11, 11, 11, 0.1)', justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md },
+  roleTextContainer: { flex: 1 },
+  roleTitleDark: { fontSize: FONT_SIZES.base, fontWeight: '900', color: COLORS.textPrimary, marginBottom: 2 },
+  roleSubtitleDark: { fontSize: FONT_SIZES.xs, color: COLORS.textPrimary, opacity: 0.85, lineHeight: 16, fontWeight: '600' },
+  roleTitleLight: { fontSize: FONT_SIZES.base, fontWeight: '900', color: COLORS.white, marginBottom: 2 },
+  roleSubtitleLight: { fontSize: FONT_SIZES.xs, color: 'rgba(255, 255, 255, 0.85)', lineHeight: 16 },
+  roleArrowCircleDark: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.secondary, justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
+  roleArrowCircleLight: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.white, justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
+  footnoteText: { fontSize: FONT_SIZES.xs, color: COLORS.textSecondary, textAlign: 'center', marginTop: SPACING.lg },
 });

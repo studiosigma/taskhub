@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   FlatList,
@@ -13,15 +13,17 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONT_SIZES, SPACING } from '../constants';
-import { tasksApi, categoriesApi } from '../services';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { COLORS, FONT_SIZES, SPACING, SHADOWS } from '../constants';
+import { useAuth } from '../hooks/useAuth';
+import { useThemeColor } from '../hooks/useThemeColor';
+import { useDebounce } from '../hooks/useDebounce';
+import { useTasks, useCategories } from '../hooks/useTasks';
 import { Task, Category } from '../types';
 import { TaskCard } from '../components/ui/TaskCard';
 import { EmptyState } from '../components/ui/EmptyState';
 import { SkeletonCard } from '../components/ui/SkeletonCard';
-import { useAuth } from '../hooks/useAuth';
-import { useThemeColor } from '../hooks/useThemeColor';
-import { useDebounce } from '../hooks/useDebounce';
+import { getCategoryIconName } from '../utils/iconMapping';
 import type { MainTabParamList, RootStackParamList } from '../types';
 
 type Props = CompositeScreenProps<
@@ -32,83 +34,56 @@ type Props = CompositeScreenProps<
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { user, activeRole, toggleRole } = useAuth();
   const theme = useThemeColor();
+  const insets = useSafeAreaInsets();
   const isHelper = activeRole === 'HELPER';
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [quickFilter, setQuickFilter] = useState<'all' | 'nearby' | 'urgent' | 'high_budget'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchTasks = useCallback(async () => {
-    try {
-      const params: any = {};
-      if (selectedCategory) params.categoryId = selectedCategory;
-      if (searchQuery) params.search = debouncedSearch;
+  const { data: tasksData, isLoading: tasksLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useTasks({
+    categoryId: selectedCategory ?? undefined,
+    search: debouncedSearch,
+  });
 
-      const data = await tasksApi.getAll(params);
-      let list: Task[] = Array.isArray(data) ? data : [];
-
-      if (quickFilter === 'nearby') {
-        list = list.filter((t) => (t?.id ? (t.id.charCodeAt(0) % 3) + 1 : 1) <= 2);
-      } else if (quickFilter === 'urgent') {
-        list = list.filter(
-          (t) =>
-            t?.duration?.toLowerCase().includes('jam') ||
-            (t?.title && t.title.toLowerCase().includes('bantu')),
-        );
-      } else if (quickFilter === 'high_budget') {
-        list = list.filter((t) => Number(t?.budget || 0) >= 200000);
-      }
-
-      setTasks(list);
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [selectedCategory, searchQuery, quickFilter]);
-
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
-
-  useEffect(() => {
-    categoriesApi
-      .getAll()
-      .then((data) => setCategories(Array.isArray(data) ? data : []))
-      .catch((e) => console.warn('fetch categories error', e));
-  }, []);
+  const { data: categories } = useCategories();
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchTasks();
+    refetch().finally(() => setRefreshing(false));
   };
+
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage]);
+
+  const tasks = tasksData?.pages.flatMap((page: any) => page.data ?? page) ?? [];
+  const isLoading = tasksLoading;
+
+  // Apply quick filters client-side
+  const filteredTasks = useMemo(() => {
+    let result = tasks;
+    if (quickFilter === 'high_budget') {
+      result = [...result].sort((a, b) => Number(b.budget) - Number(a.budget));
+    } else if (quickFilter === 'urgent') {
+      // Sort by most recently created
+      result = [...result].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    // 'nearby' would need geo-query support from backend — kept as visual label for now
+    return result;
+  }, [tasks, quickFilter]);
 
   const categoriesWithAll = useMemo(
     () => [
       { id: 'all', name: 'Semua', iconName: 'grid-outline' },
-      ...categories.map((c) => {
-        const cName = c?.name ? c.name.toLowerCase() : '';
-        return {
-          ...c,
-          iconName: cName.includes('rumah') || cName.includes('bersih')
-            ? 'sparkles-outline'
-            : cName.includes('pindah')
-            ? 'car-outline'
-            : cName.includes('food')
-            ? 'fast-food-outline'
-            : cName.includes('life')
-            ? 'heart-outline'
-            : cName.includes('event')
-            ? 'calendar-outline'
-            : 'laptop-outline',
-        };
-      }),
+      ...(categories?.map((c: Category) => ({
+        ...c,
+        iconName: c?.name ? getCategoryIconName(c.name) : 'laptop-outline',
+      })) ?? []),
     ],
     [categories],
   );
@@ -157,17 +132,17 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Search Bar */}
         <View style={styles.searchBarContainer}>
-          <Ionicons name="search" size={18} color="#71717A" style={{ marginRight: 8 }} />
+          <Ionicons name="search" size={18} color={COLORS.textSecondary} style={{ marginRight: 8 }} />
           <TextInput
             style={styles.searchInput}
             placeholder={isHelper ? 'Cari job terdekat...' : 'Cari task, contoh: bersih rumah...'}
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={COLORS.slate400}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery ? (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color="#71717A" />
+              <Ionicons name="close-circle" size={18} color={COLORS.textSecondary} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -185,7 +160,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 key={f.key}
                 style={[
                   styles.quickFilterPill,
-                  quickFilter === f.key && { backgroundColor: '#0B0B0B', borderColor: '#0B0B0B' },
+                  quickFilter === f.key && { backgroundColor: COLORS.secondary, borderColor: COLORS.secondary },
                 ]}
                 onPress={() => setQuickFilter(f.key)}
                 activeOpacity={0.8}
@@ -193,7 +168,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 <Ionicons
                   name={f.icon}
                   size={14}
-                  color={quickFilter === f.key ? theme.primary : '#71717A'}
+                  color={quickFilter === f.key ? theme.primary : COLORS.textSecondary}
                   style={{ marginRight: 4 }}
                 />
                 <Text
@@ -228,7 +203,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   <Ionicons
                     name={item.iconName || 'grid-outline'}
                     size={16}
-                    color={isSelected ? theme.text : '#71717A'}
+                    color={isSelected ? theme.text : COLORS.textSecondary}
                     style={{ marginRight: 6 }}
                   />
                   <Text
@@ -251,7 +226,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.sectionTitle}>
               {isHelper ? 'Pekerjaan Tersedia' : 'Task Terbaru'}
             </Text>
-            <Text style={[styles.taskCountBadge, { color: theme.primary }]}>({tasks.length})</Text>
+            <Text style={[styles.taskCountBadge, { color: theme.primary }]}>({filteredTasks.length})</Text>
           </View>
           <TouchableOpacity
             onPress={() => {
@@ -280,7 +255,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   // -- Top header (outside FlatList) --
   const renderHeader = () => (
-    <View style={styles.topHeaderBar}>
+    <View style={[styles.topHeaderBar, { paddingTop: insets.top + 8 }]}>
       <View style={styles.headerLeftGroup}>
         <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={() => navigation.navigate('Profile')}>
           <Ionicons name="menu" size={24} color={COLORS.textPrimary} />
@@ -316,23 +291,23 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       {renderHeader()}
 
       <FlatList
-        data={loading ? [] : tasks}
+        data={isLoading ? [] : filteredTasks}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TaskCard task={item} onPress={(t) => navigation.navigate('TaskDetail', { taskId: t.id })} />
         )}
-        ListHeaderComponent={loading ? (
+        ListHeaderComponent={isLoading ? (
           <View>
             {ListHeader}
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
+            <SkeletonCard staggerDelay={0} />
+            <SkeletonCard staggerDelay={100} />
+            <SkeletonCard staggerDelay={200} />
           </View>
         ) : ListHeader}
         ListEmptyComponent={
-          !loading ? (
+          !isLoading ? (
             <EmptyState
-              icon="🏝️"
+              icon="sunny-outline"
               title="Belum Ada Task"
               message={
                 searchQuery
@@ -347,11 +322,13 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={styles.listContentContainer}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
+            refreshing={isLoading}
+            onRefresh={refetch}
             tintColor={theme.primary}
           />
         }
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
       />
     </View>
@@ -359,7 +336,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F8FA' },
+  container: { flex: 1, backgroundColor: COLORS.bg },
   listContentContainer: { paddingBottom: 100 },
 
   topHeaderBar: {
@@ -367,14 +344,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
-    paddingTop: 54,
     paddingBottom: SPACING.xs,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F5',
+    borderBottomColor: COLORS.border,
+    ...SHADOWS.sm,
   },
   headerLeftGroup: { flexDirection: 'row', alignItems: 'center' },
-  brandTitleWrap: { flexDirection: 'row', alignItems: 'center', marginLeft: 8 },
+  brandTitleWrap: { flexDirection: 'row', alignItems: 'center', marginLeft: 10 },
   brandIconBg: { width: 28, height: 28, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
   brandLogoText: { fontSize: FONT_SIZES.lg, fontWeight: '900', color: COLORS.textPrimary, letterSpacing: -0.5 },
   iconBtn: { padding: 4 },
@@ -384,17 +361,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...SHADOWS.sm,
   },
   roleSwitcherText: { fontSize: 11, fontWeight: '800' },
 
   greetingSection: { paddingHorizontal: SPACING.lg, marginTop: SPACING.lg, marginBottom: SPACING.md },
-  greetingTitle: { fontSize: FONT_SIZES['2xl'], fontWeight: '900', color: '#0B0B0B', letterSpacing: -0.5 },
-  greetingSubtitle: { fontSize: FONT_SIZES.sm, color: '#71717A', fontWeight: '500', marginTop: 4 },
+  greetingTitle: { fontSize: FONT_SIZES['2xl'], fontWeight: '900', color: COLORS.textPrimary, letterSpacing: -0.5 },
+  greetingSubtitle: { fontSize: FONT_SIZES.sm, color: COLORS.textSecondary, fontWeight: '500', marginTop: 4 },
 
   heroBtnContainer: { paddingHorizontal: SPACING.lg, marginBottom: SPACING.lg },
   postingTaskBtn: {
@@ -403,11 +376,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
+    ...SHADOWS.md,
   },
   postingTaskBtnText: { fontSize: FONT_SIZES.base, fontWeight: '900' },
   postingTaskSubtext: { fontSize: 11, fontWeight: '600', opacity: 0.85 },
@@ -415,16 +384,16 @@ const styles = StyleSheet.create({
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     marginHorizontal: SPACING.lg,
     marginBottom: SPACING.md,
     borderRadius: 14,
     paddingHorizontal: SPACING.md,
     height: 48,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
+    borderColor: COLORS.border,
   },
-  searchInput: { flex: 1, fontSize: FONT_SIZES.sm, color: '#0B0B0B' },
+  searchInput: { flex: 1, fontSize: FONT_SIZES.sm, color: COLORS.textPrimary },
 
   quickFilterWrapper: { marginBottom: SPACING.md },
   quickFilterContent: { paddingHorizontal: SPACING.lg, gap: 8 },
@@ -434,11 +403,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
+    borderColor: COLORS.border,
   },
-  quickFilterText: { fontSize: 11, fontWeight: '700', color: '#71717A' },
+  quickFilterText: { fontSize: 11, fontWeight: '700', color: COLORS.textSecondary },
 
   categoriesWrapper: { marginBottom: SPACING.lg, height: 40 },
   categoriesContent: { paddingHorizontal: SPACING.lg, alignItems: 'center' },
@@ -448,12 +417,12 @@ const styles = StyleSheet.create({
     marginRight: SPACING.sm,
     paddingHorizontal: 14,
     paddingVertical: 6,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#F4F4F5',
+    borderColor: COLORS.border,
   },
-  categoryText: { fontSize: FONT_SIZES.xs, color: '#71717A', fontWeight: '600' },
+  categoryText: { fontSize: FONT_SIZES.xs, color: COLORS.textSecondary, fontWeight: '600' },
 
   sectionHeader: {
     flexDirection: 'row',
@@ -463,7 +432,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   sectionTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sectionTitle: { fontSize: FONT_SIZES.lg, fontWeight: '900', color: '#0B0B0B' },
+  sectionTitle: { fontSize: FONT_SIZES.lg, fontWeight: '900', color: COLORS.textPrimary },
   taskCountBadge: { fontSize: FONT_SIZES.xs, fontWeight: '800' },
-  seeAllLink: { fontSize: FONT_SIZES.sm, fontWeight: '700', color: '#71717A' },
+  seeAllLink: { fontSize: FONT_SIZES.sm, fontWeight: '700', color: COLORS.textSecondary },
 });

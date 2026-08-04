@@ -1,14 +1,21 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types";
+import * as Sharing from 'expo-sharing';
+import { Alert } from 'react-native';
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ViewStyle } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONT_SIZES, SPACING } from '../constants';
+import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../constants';
 import { useThemeColor } from '../hooks/useThemeColor';
 import { useToast } from '../components/ui/Toast';
 import { supportApi } from '../services';
 import { Button } from '../components/ui/Button';
 import { ScreenLayout } from '../components/layout/ScreenLayout';
+
+// @ts-ignore
+import QRIS_IMAGE from '../../assets/Qris_taskhub.jpeg';
+import { Asset } from 'expo-asset';
 
 export const SupportScreen: React.FC<NativeStackScreenProps<RootStackParamList, "Support">> = ({ navigation }) => {
   const theme = useThemeColor();
@@ -17,6 +24,22 @@ export const SupportScreen: React.FC<NativeStackScreenProps<RootStackParamList, 
   const [amount, setAmount] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleDownloadQRIS = async () => {
+    try {
+      const asset = Asset.fromModule(QRIS_IMAGE);
+      await asset.downloadAsync();
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(asset.localUri || asset.uri);
+      } else {
+        Alert.alert('Info', 'Sharing tidak didukung di perangkat ini');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.show({ type: 'error', title: 'Gagal', message: 'Gagal membagikan QRIS' });
+    }
+  };
 
   const handleDonate = async () => {
     if (!amount || parseInt(amount) < 1000) {
@@ -37,13 +60,9 @@ export const SupportScreen: React.FC<NativeStackScreenProps<RootStackParamList, 
   };
 
   return (
-    <ScreenLayout
-      title="Dukung TaskHub"
-      onBack={() => navigation.goBack()}
-      scrollable={true}
-    >
+    <ScreenLayout title="Dukung TaskHub" onBack={() => navigation.goBack()} scrollable={true}>
       <View style={styles.heartCircle}>
-        <Ionicons name="heart" size={44} color="#EB5757" />
+        <Ionicons name="heart" size={44} color={COLORS.coralRed} />
       </View>
       <Text style={styles.title}>Dukung TaskHub</Text>
       <Text style={styles.description}>
@@ -51,15 +70,20 @@ export const SupportScreen: React.FC<NativeStackScreenProps<RootStackParamList, 
       </Text>
 
       <View style={styles.qrisBox}>
-        <Ionicons name="qr-code-outline" size={48} color="#0B0B0B" style={{ marginBottom: 8 }} />
-        <Text style={styles.qrisText}>Scan QRIS untuk Dukungan</Text>
+        <Image source={QRIS_IMAGE} style={{ width: 260, height: 260, marginBottom: SPACING.md }} contentFit="contain" />
+        <Button
+          title="Simpan/Bagikan QRIS"
+          onPress={handleDownloadQRIS}
+          variant="secondary"
+          style={styles.downloadBtn}
+        />
       </View>
 
       <Text style={styles.label}>Nominal Donasi (Rp)</Text>
       <TextInput
         style={styles.input}
         placeholder="Nominal bebas"
-        placeholderTextColor="#94A3B8"
+        placeholderTextColor={COLORS.slate400}
         value={amount}
         onChangeText={setAmount}
         keyboardType="numeric"
@@ -69,14 +93,14 @@ export const SupportScreen: React.FC<NativeStackScreenProps<RootStackParamList, 
       <TextInput
         style={[styles.input, styles.textArea]}
         placeholder="Semangat terus!"
-        placeholderTextColor="#94A3B8"
+        placeholderTextColor={COLORS.slate400}
         value={message}
         onChangeText={setMessage}
         multiline
       />
 
       <Button
-        title="Kirim Donasi ❤️"
+        title="Kirim Donasi"
         onPress={handleDonate}
         loading={loading}
         style={[styles.donateBtn, donateBtnStyle]}
@@ -87,42 +111,24 @@ export const SupportScreen: React.FC<NativeStackScreenProps<RootStackParamList, 
 
 const styles = StyleSheet.create({
   heartCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.red50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginTop: 20,
-    marginBottom: SPACING.md,
+    width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.red50,
+    justifyContent: 'center', alignItems: 'center', alignSelf: 'center',
+    marginTop: 20, marginBottom: SPACING.md,
   },
   title: { fontSize: FONT_SIZES['2xl'], fontWeight: '900', textAlign: 'center', color: COLORS.textPrimary },
   description: { fontSize: FONT_SIZES.sm, textAlign: 'center', color: COLORS.textSecondary, marginBottom: SPACING.xl, marginTop: SPACING.xs },
   qrisBox: {
-    width: '100%',
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: SPACING.xl,
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderStyle: 'dashed',
+    width: '100%', backgroundColor: COLORS.surface, borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.xl, alignItems: 'center', marginBottom: SPACING.lg,
+    borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed',
   },
-  qrisText: { fontSize: FONT_SIZES.sm, fontWeight: '700', color: COLORS.textPrimary },
   label: { fontSize: FONT_SIZES.sm, fontWeight: '700', color: COLORS.textPrimary, marginBottom: SPACING.xs },
   input: {
-    width: '100%',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 14,
-    padding: SPACING.lg,
-    fontSize: FONT_SIZES.base,
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.md,
+    width: '100%', backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.lg, padding: SPACING.lg, fontSize: FONT_SIZES.base,
+    color: COLORS.textPrimary, marginBottom: SPACING.md,
   },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
-  donateBtn: { width: '100%', borderRadius: 16, height: 50, marginTop: SPACING.md },
+  donateBtn: { width: '100%', borderRadius: BORDER_RADIUS.lg, height: 50, marginTop: SPACING.md },
+  downloadBtn: { width: '100%', borderRadius: BORDER_RADIUS.lg, height: 45, marginBottom: 0 },
 });

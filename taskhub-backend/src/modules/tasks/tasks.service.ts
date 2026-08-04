@@ -14,8 +14,22 @@ export class TasksService {
     });
   }
 
+  private calculateHaversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Earth radius in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c * 10) / 10; // Rounded to 1 decimal place
+  }
+
   async findAll(query: any): Promise<PaginatedResult<Task>> {
-    const { page, limit, status, categoryId, search } = query;
+    const { page, limit, status, categoryId, search, lat, lng, radiusKm } = query;
     const paginationDto: PaginationQueryDto = { page, limit };
 
     const where: any = {};
@@ -28,11 +42,29 @@ export class TasksService {
       ];
     }
 
-    return paginate<Task>(this.prisma.task, paginationDto, {
+    const result = await paginate<Task>(this.prisma.task, paginationDto, {
       where,
-      include: { category: true, owner: true },
+      include: { category: true, owner: true, photos: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    if (lat && lng) {
+      const userLat = parseFloat(lat);
+      const userLng = parseFloat(lng);
+      const radius = radiusKm ? parseFloat(radiusKm) : Infinity;
+
+      result.data = result.data
+        .map((task: any) => {
+          const taskLat = task.latitude || -6.2088;
+          const taskLng = task.longitude || 106.8456;
+          const distanceKm = this.calculateHaversineDistance(userLat, userLng, taskLat, taskLng);
+          return { ...task, distanceKm };
+        })
+        .filter((task: any) => task.distanceKm <= radius)
+        .sort((a: any, b: any) => a.distanceKm - b.distanceKm);
+    }
+
+    return result;
   }
 
   async findOne(id: string): Promise<Task> {

@@ -30,7 +30,9 @@
       "expo-secure-store",
       "expo-location",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "expo-sharing",
+      "@sentry/react-native"
     ]
   }
 }

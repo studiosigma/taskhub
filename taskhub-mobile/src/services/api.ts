@@ -20,7 +20,9 @@ api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
 // Response interceptor — handle unwrapping & 401 refresh
 api.interceptors.response.use(
   (response) => {
-    if (response.data && response.data.data !== undefined) {
+    // Only unwrap if response.data.data is an array (paginated list)
+    // Single objects like {id:..., title:...} should NOT be unwrapped again
+    if (response.data && Array.isArray(response.data.data)) {
       response.data = response.data.data;
     }
     return response;

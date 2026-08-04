@@ -5,7 +5,7 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, ViewStyle } from '
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { COLORS, FONT_SIZES, SPACING } from '../constants';
+import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../constants';
 import { useThemeColor } from '../hooks/useThemeColor';
 import { useToast } from '../components/ui/Toast';
 import { Badge } from '../components/ui/Badge';
@@ -88,7 +88,7 @@ export const IdentityVerificationScreen: React.FC<NativeStackScreenProps<RootSta
       <TextInput
         style={styles.input}
         placeholder="Contoh: 3275012304950002"
-        placeholderTextColor="#94A3B8"
+        placeholderTextColor={COLORS.slate400}
         value={nik}
         onChangeText={setNik}
         keyboardType="numeric"
@@ -101,7 +101,7 @@ export const IdentityVerificationScreen: React.FC<NativeStackScreenProps<RootSta
           <Image source={{ uri: ktpPhoto }} style={styles.previewImage} />
         ) : (
           <View style={styles.uploadPlaceholder}>
-            <Ionicons name="camera-outline" size={32} color="#0B0B0B" style={{ marginBottom: 4 }} />
+            <Ionicons name="camera-outline" size={32} color={COLORS.textPrimary} style={{ marginBottom: 4 }} />
             <Text style={styles.uploadText}>Ambil Foto KTP</Text>
           </View>
         )}
@@ -113,14 +113,14 @@ export const IdentityVerificationScreen: React.FC<NativeStackScreenProps<RootSta
           <Image source={{ uri: selfiePhoto }} style={styles.previewImage} />
         ) : (
           <View style={styles.uploadPlaceholder}>
-            <Ionicons name="person-outline" size={32} color="#0B0B0B" style={{ marginBottom: 4 }} />
+            <Ionicons name="person-outline" size={32} color={COLORS.textPrimary} style={{ marginBottom: 4 }} />
             <Text style={styles.uploadText}>Ambil Foto Swafoto</Text>
           </View>
         )}
       </TouchableOpacity>
 
       <Button
-        title={status === 'VERIFIED' ? 'Terverifikasi ✅' : 'Kirim Verifikasi'}
+        title={status === 'VERIFIED' ? 'Terverifikasi' : 'Kirim Verifikasi'}
         onPress={handleSubmit}
         loading={loading}
         disabled={status === 'VERIFIED'}
@@ -135,30 +135,17 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 12, color: COLORS.slate600, flex: 1, lineHeight: 16 },
   label: { fontSize: FONT_SIZES.sm, fontWeight: '800', color: COLORS.textPrimary, marginBottom: SPACING.xs, marginTop: SPACING.sm },
   input: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 14,
-    padding: SPACING.lg,
-    fontSize: FONT_SIZES.base,
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.md,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.lg, padding: SPACING.lg, fontSize: FONT_SIZES.base,
+    color: COLORS.textPrimary, marginBottom: SPACING.md,
   },
   uploadCard: {
-    width: '100%',
-    height: 140,
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: COLORS.warmYellow,
-    overflow: 'hidden',
-    marginBottom: SPACING.md,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: '100%', height: 140, backgroundColor: COLORS.surface, borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1, borderStyle: 'dashed', borderColor: COLORS.primary,
+    overflow: 'hidden', marginBottom: SPACING.md, justifyContent: 'center', alignItems: 'center',
   },
   uploadPlaceholder: { alignItems: 'center' },
   uploadText: { fontSize: FONT_SIZES.xs, fontWeight: '800', color: COLORS.textPrimary },
-  previewImage: { width: '100%', height: '100%', borderRadius: 16 },
-  submitBtn: { borderRadius: 16, height: 50, marginTop: SPACING.lg },
+  previewImage: { width: '100%', height: '100%', borderRadius: BORDER_RADIUS.lg },
+  submitBtn: { borderRadius: BORDER_RADIUS.lg, height: 50, marginTop: SPACING.lg },
 });

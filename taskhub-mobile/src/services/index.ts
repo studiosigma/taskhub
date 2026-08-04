@@ -8,9 +8,11 @@ import { safeStorage } from '../utils/storage';
  * After the API interceptor strips `{ success, data }`, paginated endpoints
  * return `{ data: T[], meta: {...} }`. This extracts the array.
  */
-function unwrapList<T>(response: any): T[] {
-  const data = response.data ?? response;
-  return Array.isArray(data) ? data : data?.data ?? [];
+function unwrapList<T>(response: { data: T[]; meta?: any } | T[]): T[] {
+  if (Array.isArray(response)) {
+    return response;
+  }
+  return Array.isArray(response.data) ? response.data : [];
 }
 
 // ---- Auth API ----
@@ -31,58 +33,74 @@ export const authApi = {
 // ---- Tasks API ----
 export const tasksApi = {
   getAll: (params?: any) =>
-    api.get<{ data: Task[]; meta: any }>('/tasks', { params }).then(r => r.data.data),
+    api.get<Task[]>('/tasks', { params }).then(unwrapList),
 
   getById: (id: string) =>
-    api.get<{ data: Task }>(`/tasks/${id}`).then(r => r.data.data),
+    api.get<Task>(`/tasks/${id}`).then(r => r.data),
 
   create: (data: any) =>
-    api.post<{ data: Task }>('/tasks', data).then(r => r.data.data),
+    api.post<Task>('/tasks', data).then(r => r.data),
 
   update: (id: string, data: any) =>
-    api.patch<{ data: Task }>(`/tasks/${id}`, data).then(r => r.data.data),
+    api.patch<Task>(`/tasks/${id}`, data).then(r => r.data),
 
   delete: (id: string) =>
     api.delete(`/tasks/${id}`).then(r => r.data),
 
   apply: (taskId: string, message?: string) =>
-    api.post<{ data: any }>(`/tasks/${taskId}/apply`, { message }).then(r => r.data.data),
+    api.post<any>(`/tasks/${taskId}/apply`, { message }).then(r => r.data),
 
   getMyTasks: () =>
-    api.get<{ data: Task[] }>('/tasks/my/owned').then(r => r.data.data),
+    api.get<Task[]>('/tasks/my/owned').then(r => r.data),
 
   getMyApplications: () =>
-    api.get<{ data: Task[] }>('/applications/my').then(r => r.data.data),
+    api.get<any[]>('/applications/my').then(r => r.data),
+
+  uploadTaskPhoto: (formData: FormData) =>
+    api.post<{ url: string }>('/upload/image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
 };
 
 // ---- Users API ----
 export const usersApi = {
   getProfile: () =>
-    api.get<{ data: User }>('/users/me').then(r => r.data.data),
+    api.get<User>('/users/me').then(r => r.data),
 
   updateProfile: (data: Partial<User>) =>
-    api.patch<{ data: User }>('/users/me', data).then(r => r.data.data),
+    api.patch<User>('/users/me', data).then(r => r.data),
+
+  uploadAvatar: (file: FormData) =>
+    api.post<User>('/users/me/avatar', file, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
+
+  getFinancialSummary: () =>
+    api.get<any>('/users/me/financial-summary').then(r => r.data),
 };
 
 // ---- Categories API ----
 export const categoriesApi = {
   getAll: () =>
-    api.get<{ data: Category[] }>('/categories').then(r => r.data.data),
+    api.get<Category[]>('/categories').then(r => r.data),
 };
 
 // ---- Reviews API ----
 export const reviewsApi = {
   create: (taskId: string, rating: number, comment?: string) =>
-    api.post<{ data: any }>(`/tasks/${taskId}/reviews`, { rating, comment }).then(r => r.data.data),
+    api.post<any>(`/tasks/${taskId}/reviews`, { rating, comment }).then(r => r.data),
 
   getByUser: (userId: string) =>
-    api.get<{ data: any[] }>(`/users/${userId}/reviews`).then(r => r.data.data),
+    api.get<any[]>(`/users/${userId}/reviews`).then(r => r.data),
 };
 
 // ---- Support API ----
 export const supportApi = {
   createDonation: (amount: number, paymentMethod: string, message?: string) =>
     api.post('/support/donations', { amount, paymentMethod, message }).then(r => r.data),
+
+  getDonations: () =>
+    api.get('/support/donations').then(r => r.data),
 };
 
 // ---- Verifications API ----
@@ -97,16 +115,24 @@ export const verificationsApi = {
 // ---- Chats API ----
 export const chatsApi = {
   getConversations: () =>
-    api.get<{ data: Conversation[] }>('/chats/conversations').then(r => r.data.data),
+    api.get<Conversation[]>('/chats/conversations').then(r => r.data),
 
   getMessages: (conversationId: string) =>
-    api.get<{ data: Message[] }>(`/chats/conversations/${conversationId}/messages`).then(r => r.data.data),
+    api.get<Message[]>(`/chats/conversations/${conversationId}/messages`).then(r => r.data),
 
   createConversation: (taskId: string, userIds: string[]) =>
     api.post('/chats/conversations', { taskId, userIds }).then(r => r.data),
 
   sendMessage: (conversationId: string, content: string) =>
     api.post(`/chats/conversations/${conversationId}/messages`, { content }).then(r => r.data),
+
+  markAsRead: (conversationId: string) =>
+    api.post(`/chats/conversations/${conversationId}/read`).then(r => r.data),
+
+  uploadTaskPhoto: (file: FormData) =>
+    api.post<any>('/upload/image', file, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
 };
 
 // ---- Storage helpers ----
