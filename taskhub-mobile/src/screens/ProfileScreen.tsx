@@ -149,7 +149,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     },
     {
       icon: 'shield-checkmark-outline',
-      label: 'Verifikasi Identitas & KTP',
+      label: 'Verifikasi Profil & Kontak',
       badge: user?.isVerified ? 'Terverifikasi' : 'Belum',
       badgeColor: user?.isVerified ? COLORS.success : COLORS.amber800,
       onPress: () => navigation.navigate('IdentityVerification'),

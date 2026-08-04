@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { VerificationStatus } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
@@ -29,21 +30,50 @@ export class AdminService {
 
   async getPendingVerifications() {
     return this.prisma.verification.findMany({
-      where: { status: 'PENDING' },
+      where: { status: VerificationStatus.PENDING },
       include: { user: true },
     });
   }
 
   async approveVerification(id: string) {
     const ver = await this.prisma.verification.findUnique({ where: { id } });
-    if (!ver) throw new Error('Not found');
+    if (!ver) throw new NotFoundException('Verification document not found');
+
     return this.prisma.$transaction([
-      this.prisma.verification.update({ where: { id }, data: { status: 'APPROVED' } }),
-      this.prisma.user.update({ where: { id: ver.userId }, data: { isVerified: true } }),
+      this.prisma.verification.update({
+        where: { id },
+        data: { status: VerificationStatus.APPROVED },
+      }),
+      this.prisma.user.update({
+        where: { id: ver.userId },
+        data: { isVerified: true },
+      }),
+      this.prisma.notification.create({
+        data: {
+          userId: ver.userId,
+          title: 'Verifikasi Identitas Disetujui! 🎉',
+          description: 'Selamat! Akun Anda kini telah resmi terverifikasi dengan badge centang hijau.',
+        },
+      }),
     ]);
   }
 
   async rejectVerification(id: string, reason: string) {
-    return this.prisma.verification.update({ where: { id }, data: { status: 'REJECTED', rejectedReason: reason } });
+    const ver = await this.prisma.verification.findUnique({ where: { id } });
+    if (!ver) throw new NotFoundException('Verification document not found');
+
+    return this.prisma.$transaction([
+      this.prisma.verification.update({
+        where: { id },
+        data: { status: VerificationStatus.REJECTED, rejectedReason: reason },
+      }),
+      this.prisma.notification.create({
+        data: {
+          userId: ver.userId,
+          title: 'Verifikasi Identitas Ditolak ⚠️',
+          description: `Pengajuan verifikasi Anda ditolak. Alasan: ${reason || 'Foto kurang jelas'}`,
+        },
+      }),
+    ]);
   }
 }
