@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: taskhub-backend
+    env: docker
+    dockerfilePath: Dockerfile
+    region: singapore
+    plan: free
+    healthCheckPath: /categories
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 1d

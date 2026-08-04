@@ -1,24 +1,32 @@
-
-# Stage 1: Dependencies
-FROM node:20-alpine AS deps
+# Stage 1: Build
+FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
 
-# Stage 2: Build
-FROM node:20-alpine AS build
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy dependency files
+COPY package*.json prisma ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
 COPY . .
+
+# Generate Prisma Client & Build NestJS app
 RUN npx prisma generate
 RUN npm run build
 
-# Stage 3: Production
-FROM node:20-alpine AS prod
+# Stage 2: Production Runner
+FROM node:20-alpine AS runner
 WORKDIR /app
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/package.json ./package.json
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+
 EXPOSE 3000
-CMD ["node", "dist/src/main.js"]
+
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/src/main.js"]
