@@ -100,7 +100,13 @@ export const supportApi = {
     api.post('/support/donations', { amount, paymentMethod, message }).then(r => r.data),
 
   getDonations: () =>
-    api.get('/support/donations').then(r => r.data),
+    api.get<any[]>('/support/donations/my').then(r => r.data),
+};
+
+// ---- Reports API ----
+export const reportsApi = {
+  createReport: (reportedUserId: string, reason: string, description?: string) =>
+    api.post('/reports', { reportedUserId, reason, description }).then(r => r.data),
 };
 
 // ---- Verifications API ----

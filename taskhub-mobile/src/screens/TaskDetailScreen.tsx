@@ -17,6 +17,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { ErrorState } from '../components/ui/ErrorState';
 import { RatingModal } from '../components/ui/RatingModal';
+import { ReportModal } from '../components/ui/ReportModal';
 import { ImageModalViewer } from '../components/ui/ImageModalViewer';
 import { ScalePress } from '../components/ui/ScalePress';
 import { TaskMapView } from '../components/ui/TaskMapView';
@@ -37,6 +38,7 @@ export const TaskDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Gallery viewer state
   const [viewerVisible, setViewerVisible] = useState(false);
@@ -230,6 +232,13 @@ export const TaskDetailScreen: React.FC<{ route: any; navigation: any }> = ({
               <Text style={styles.trustShieldTitle}>Garansi Pengerjaan Aman</Text>
               <Text style={styles.trustShieldSub}>Pembayaran dilakukan langsung secara tunai/transparan setelah tugas selesai.</Text>
             </View>
+            <TouchableOpacity
+              onPress={() => setShowReportModal(true)}
+              style={{ paddingLeft: 8 }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="flag-outline" size={18} color={COLORS.coralRed} />
+            </TouchableOpacity>
           </View>
 
           {/* Description */}
