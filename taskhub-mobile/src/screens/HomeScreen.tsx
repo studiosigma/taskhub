@@ -94,14 +94,26 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       <View>
         {/* Greeting Section */}
         <View style={styles.greetingSection}>
-          <Text style={styles.greetingTitle}>
-            Halo, {user?.fullName?.split(' ')[0] || 'Muis'} 👋
-          </Text>
-          <Text style={styles.greetingSubtitle}>
-            {isHelper
-              ? 'Temukan pekerjaan terdekat & dapatkan penghasilan!'
-              : 'Ada task yang ingin diselesaikan hari ini?'}
-          </Text>
+          <View style={styles.greetingHeaderRow}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={styles.greetingTitle}>
+                Halo, {user?.fullName?.split(' ')[0] || 'Muis'} 👋
+              </Text>
+              <Text style={styles.greetingSubtitle}>
+                {isHelper
+                  ? 'Temukan pekerjaan terdekat & dapatkan penghasilan!'
+                  : 'Ada task yang ingin diselesaikan hari ini?'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.notificationBellBtn}
+              onPress={() => navigation.navigate('Notifications')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="notifications-outline" size={24} color={COLORS.textPrimary} />
+              <View style={styles.notificationBellBadge} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Hero CTA */}
@@ -366,6 +378,27 @@ const styles = StyleSheet.create({
   roleSwitcherText: { fontSize: 11, fontWeight: '800' },
 
   greetingSection: { paddingHorizontal: SPACING.lg, marginTop: SPACING.lg, marginBottom: SPACING.md },
+  greetingHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  notificationBellBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.sm,
+  },
+  notificationBellBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.coralRed,
+  },
   greetingTitle: { fontSize: FONT_SIZES['2xl'], fontWeight: '900', color: COLORS.textPrimary, letterSpacing: -0.5 },
   greetingSubtitle: { fontSize: FONT_SIZES.sm, color: COLORS.textSecondary, fontWeight: '500', marginTop: 4 },
 

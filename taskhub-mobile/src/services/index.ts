@@ -1,5 +1,5 @@
 import api from './api';
-import { AuthResponse, LoginDto, RegisterDto, User, Task, Category, Conversation, Message } from '../types';
+import { AuthResponse, LoginDto, RegisterDto, User, Task, Category, Conversation, Message, NotificationItem } from '../types';
 import { STORAGE_KEYS } from '../constants';
 import { safeStorage } from '../utils/storage';
 
@@ -133,6 +133,18 @@ export const chatsApi = {
     api.post<any>('/upload/image', file, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(r => r.data),
+};
+
+// ---- Notifications API ----
+export const notificationsApi = {
+  getAll: () =>
+    api.get<NotificationItem[]>('/notifications').then(r => r.data),
+
+  markRead: (id: string) =>
+    api.patch(`/notifications/${id}/read`).then(r => r.data),
+
+  markAllRead: () =>
+    api.patch('/notifications/read-all').then(r => r.data),
 };
 
 // ---- Storage helpers ----

@@ -23,6 +23,7 @@ import { ReviewsScreen } from '../screens/ReviewsScreen';
 import { AddressesScreen } from '../screens/AddressesScreen';
 import { SecurityScreen } from '../screens/SecurityScreen';
 import { FinancialDashboardScreen } from '../screens/FinancialDashboardScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
 
 import { useAuth } from '../hooks/useAuth';
 
@@ -186,6 +187,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="Addresses" component={AddressesScreen} />
           <Stack.Screen name="Security" component={SecurityScreen} />
           <Stack.Screen name="FinancialDashboard" component={FinancialDashboardScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
         </>
       )}
     </Stack.Navigator>

@@ -25,6 +25,7 @@ export type RootStackParamList = {
   Addresses: undefined;
   Security: undefined;
   FinancialDashboard: undefined;
+  Notifications: undefined;
 };
 
 export type MainTabParamList = {
@@ -206,4 +207,13 @@ export interface ApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  userId: string;
+  title: string;
+  description: string;
+  isRead: boolean;
+  createdAt: string;
 }
